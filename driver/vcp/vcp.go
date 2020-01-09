@@ -21,8 +21,12 @@ type VCP struct {
 
 // NewVCP creates a new Virtual COM Port (VCP).
 func NewVCP(serialPort string) (*VCP, error) {
-	c := &serial.Config{Name: serialPort, Baud: 115200, ReadTimeout: time.Millisecond * 500}
-	port, err := serial.OpenPort(c)
+	cfg := &serial.Config{
+		Name:        serialPort,
+		Baud:        115200,
+		ReadTimeout: time.Millisecond * 500,
+	}
+	port, err := serial.OpenPort(cfg)
 	if err != nil {
 		return nil, err
 	}

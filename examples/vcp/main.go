@@ -7,17 +7,23 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/gotmc/prologix"
-	"github.com/gotmc/prologix/driver/vcp"
+	"github.com/tarm/serial"
 )
 
 func main() {
-	driver, err := vcp.NewVCP("/dev/tty.usbserial-PX8X3YR6")
+	cfg := serial.Config{
+		Name:        "/dev/tty.usbserial-PXFJL0WD",
+		Baud:        115200,
+		ReadTimeout: time.Millisecond * 500,
+	}
+	port, err := serial.OpenPort(&cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	gpib, err := prologix.NewController(driver, 4, true)
+	gpib, err := prologix.NewController(port, 4, true)
 	addr, err := gpib.InstrumentAddress()
 	if err != nil {
 		log.Fatal(err)
