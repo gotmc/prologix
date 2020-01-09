@@ -8,21 +8,22 @@ package main
 import (
 	"log"
 
-	"github.com/gotmc/prologix/usb/vcp"
+	"github.com/gotmc/prologix"
+	"github.com/gotmc/prologix/driver/vcp"
 )
 
 func main() {
-	// dev, err := vcp.NewDevice("/dev/tty.usbserial-PX8X3YR6", 4)
-	dev, err := vcp.NewDevice("/dev/tty.usbserial-PXFJL0WD", 4)
+	driver, err := vcp.NewVCP("/dev/tty.usbserial-PX8X3YR6")
 	if err != nil {
 		log.Fatal(err)
 	}
-	addr, err := dev.Address()
+	gpib, err := prologix.NewController(driver, 4, true)
+	addr, err := gpib.InstrumentAddress()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("GPIB address = %d", addr)
-	ver, err := dev.Version()
+	log.Printf("GPIB instrument address = %d", addr)
+	ver, err := gpib.Version()
 	if err != nil {
 		log.Fatal(err)
 	}
