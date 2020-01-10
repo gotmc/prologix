@@ -6,6 +6,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"log"
 	"time"
 
@@ -14,8 +16,9 @@ import (
 )
 
 func main() {
+	// Open a serial port.
 	cfg := serial.Config{
-		Name:        "/dev/tty.usbserial-PXFJL0WD",
+		Name:        "/dev/tty.usbserial-PX8X3YR6",
 		Baud:        115200,
 		ReadTimeout: time.Millisecond * 500,
 	}
@@ -23,15 +26,81 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Create a new GPIB controller using the aforementioned serial port and
+	// communicating with the instrument at GPIB address 4.
 	gpib, err := prologix.NewController(port, 4, true)
+
+	// Query the GPIB instrument address.
 	addr, err := gpib.InstrumentAddress()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("GPIB instrument address = %d", addr)
+
+	// Query the Prologix controller version.
 	ver, err := gpib.Version()
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("%s", ver)
+
+	// Query the auto mode (i.e., read after write).
+	auto, err := gpib.ReadAfterWrite()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Read after write = %t", auto)
+
+	// Query the read timeout
+	timeout, err := gpib.ReadTimeout()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Read timeout = %d ms", timeout)
+
+	// Determine if the SRQ is asserted.
+	srq, err := gpib.ServiceRequest()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Service request asserted = %t", srq)
+
+	cmds := []string{
+		"burst:state off",
+		"apply:sinusoid 100, 0.1, 0.0",
+		"burst:internal:period 0.224",
+		"burst:ncycles 11",
+		"burs:stat on",
+	}
+
+	for _, cmd := range cmds {
+		_, err := gpib.WriteString(cmd)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	queries := []string{"volt"}
+	queryRange(gpib, queries)
+
+	// Close the serial port and check for errors.
+	err = port.Close()
+	if err != nil {
+		log.Printf("error closing fg: %s", err)
+	}
+}
+
+func queryRange(gpib *prologix.Controller, r []string) {
+	for _, q := range r {
+		ws := fmt.Sprintf("%s?", q)
+		log.Printf("Querying %s", ws)
+		s, err := gpib.Query(ws)
+		log.Printf("Completed %s query", ws)
+		if err != nil && err != io.EOF {
+			log.Printf("Error reading: %v", err)
+		} else {
+			log.Printf("Query %s? = %s", q, s)
+		}
+	}
 }
