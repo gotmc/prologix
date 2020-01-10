@@ -12,7 +12,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Controller models a GPIB controller-in-charge.
@@ -80,27 +79,21 @@ func (c *Controller) WriteString(s string) (n int, err error) {
 // Query queries the instrument at the currently assigned GPIB using the Read
 // and Write methods.
 func (c *Controller) Query(s string) (string, error) {
-	n, err := fmt.Fprintf(c.rw, "%s\r\n", s)
+	n, err := fmt.Fprintf(c.rw, "%s\n", s)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
 	}
 	log.Printf("wrote %d bytes sending command `%s`", n, s)
 	if !c.auto {
-		log.Printf("++read eoi for query %s", s)
-		n, err := fmt.Fprint(c.rw, "++read eoi\r\n")
+		readCmd := "++read"
+		log.Printf("%s for query %s", readCmd, s)
+		n, err := fmt.Fprintf(c.rw, "%s\n", readCmd)
 		if err != nil {
 			return "", fmt.Errorf("Whoa! %s", err)
 		}
-		log.Printf("wrote %d bytes sending command `++read eoi`", n)
+		log.Printf("wrote %d bytes sending command `%s`", n, readCmd)
 	}
-	log.Printf("started reading at %s", time.Now())
-	buf := make([]byte, 8)
-	n, err = c.rw.Read(buf)
-	log.Printf("finished reading at %s", time.Now())
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%v", buf[:n]), nil
+	return bufio.NewReader(c.rw).ReadString('\n')
 }
 
 // QueryCommand sends the given command to the Prologix controller and returns
