@@ -9,10 +9,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Controller models a GPIB controller-in-charge.
@@ -44,7 +44,7 @@ func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) 
 		"eos 0",           // Set GPIB termination.
 		"read_tmo_ms 500", // Set the read timeout to 500 ms.
 		"eot_char 10",     // Set the EOT char
-		"eot_enable 1",    // Do not append character when EOI detected
+		"eot_enable 1",    // Append character when EOI detected?
 		"savecfg 1",       // Enable saving of configuration parameters in EPROM
 	}
 	if clear {
@@ -79,17 +79,28 @@ func (c *Controller) WriteString(s string) (n int, err error) {
 
 // Query queries the instrument at the currently assigned GPIB using the Read
 // and Write methods.
-func (c *Controller) Query(s string) (value string, err error) {
-	fmt.Fprintf(c.rw, "%s\n", s)
+func (c *Controller) Query(s string) (string, error) {
+	n, err := fmt.Fprintf(c.rw, "%s\r\n", s)
+	if err != nil {
+		return "", fmt.Errorf("error writing command: %s", err)
+	}
+	log.Printf("wrote %d bytes sending command `%s`", n, s)
 	if !c.auto {
 		log.Printf("++read eoi for query %s", s)
-		_, err := fmt.Fprint(c.rw, "++read eoi")
+		n, err := fmt.Fprint(c.rw, "++read eoi\r\n")
 		if err != nil {
 			return "", fmt.Errorf("Whoa! %s", err)
 		}
+		log.Printf("wrote %d bytes sending command `++read eoi`", n)
 	}
-	b, err := ioutil.ReadAll(c.rw)
-	return string(b), err
+	log.Printf("started reading at %s", time.Now())
+	buf := make([]byte, 8)
+	n, err = c.rw.Read(buf)
+	log.Printf("finished reading at %s", time.Now())
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%v", buf[:n]), nil
 }
 
 // QueryCommand sends the given command to the Prologix controller and returns
