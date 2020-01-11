@@ -29,6 +29,9 @@ func main() {
 	// Create a new GPIB controller using the aforementioned serial port and
 	// communicating with the instrument at GPIB address 4.
 	gpib, err := prologix.NewController(port, 4, true)
+	if err != nil {
+		log.Fatalf("NewController error: %s", err)
+	}
 
 	// Query the GPIB instrument address.
 	addr, err := gpib.InstrumentAddress()
@@ -65,6 +68,7 @@ func main() {
 	}
 	log.Printf("Service request asserted = %t", srq)
 
+	// Send some commands to the Keysight 33220A function generator.
 	cmds := []string{
 		"burst:state off",
 		"apply:sinusoid 100, 0.1, 0.0",
@@ -72,7 +76,6 @@ func main() {
 		"burst:ncycles 11",
 		"burs:stat on",
 	}
-
 	for _, cmd := range cmds {
 		_, err := gpib.WriteString(cmd)
 		if err != nil {
@@ -80,11 +83,18 @@ func main() {
 		}
 	}
 
+	// Query the identification of the function generator.
 	idn, err := gpib.Query("*idn?")
 	if err != nil && err != io.EOF {
-		log.Fatalf("err querying serial port: %s", err)
+		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("query idn = %s", idn)
+
+	// Return local control to the front panel.
+	err = gpib.FrontPanel(true)
+	if err != nil {
+		log.Fatalf("error setting local control for front panel: %s", err)
+	}
 
 	// Discard any unread data on the serial port and then close.
 	err = port.Flush()
