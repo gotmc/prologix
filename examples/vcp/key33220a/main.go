@@ -6,7 +6,7 @@
 package main
 
 import (
-	"fmt"
+	"bufio"
 	"io"
 	"log"
 	"time"
@@ -81,26 +81,37 @@ func main() {
 		}
 	}
 
-	queries := []string{"volt"}
-	queryRange(gpib, queries)
+	io.WriteString(port, "*idn?\n")
+	io.WriteString(port, "++read eoi\n")
+	id, err := bufio.NewReader(port).ReadString('\n')
+	if err != nil && err != io.EOF {
+		log.Fatalf("err reading serial port: %s", err)
+	}
+	log.Printf("idn = %s", id)
+	// buf := make([]byte, 8)
+	// n, err := port.Read(buf)
+	// if err != nil {
+	// 	log.Printf("error = %s", err)
+	// }
+	// if err == io.EOF {
+	// 	log.Printf("EOF error; read %d bytes = %s", n, buf[:n])
+	// } else {
+	// 	log.Printf("read %d bytes = %s", n, buf[:n])
+	// }
+
+	id2, err := gpib.Query("*idn?")
+	if err != nil && err != io.EOF {
+		log.Fatalf("err querying serial port: %s", err)
+	}
+	log.Printf("query idn = %s", id2)
 
 	// Close the serial port and check for errors.
+	err = port.Flush()
+	if err != nil {
+		log.Printf("error flushing serial port: %s", err)
+	}
 	err = port.Close()
 	if err != nil {
-		log.Printf("error closing fg: %s", err)
-	}
-}
-
-func queryRange(gpib *prologix.Controller, r []string) {
-	for _, q := range r {
-		ws := fmt.Sprintf("%s?", q)
-		log.Printf("Querying %s", ws)
-		s, err := gpib.Query(ws)
-		log.Printf("Completed %s query", ws)
-		if err != nil && err != io.EOF {
-			log.Printf("Error reading: %v", err)
-		} else {
-			log.Printf("Query %s? = %s", q, s)
-		}
+		log.Printf("error closing serial port: %s", err)
 	}
 }

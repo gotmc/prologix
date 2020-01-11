@@ -9,7 +9,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -79,19 +78,18 @@ func (c *Controller) WriteString(s string) (n int, err error) {
 // Query queries the instrument at the currently assigned GPIB using the Read
 // and Write methods.
 func (c *Controller) Query(s string) (string, error) {
-	n, err := fmt.Fprintf(c.rw, "%s\n", s)
+	_, err := fmt.Fprintf(c.rw, "%s\n", s)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
 	}
-	log.Printf("wrote %d bytes sending command `%s`", n, s)
+	// If read-after-write is disabled, need to tell the Prologix controller to
+	// read.
 	if !c.auto {
-		readCmd := "++read"
-		log.Printf("%s for query %s", readCmd, s)
-		n, err := fmt.Fprintf(c.rw, "%s\n", readCmd)
+		readCmd := "++read eoi"
+		_, err := fmt.Fprintf(c.rw, "%s\n", readCmd)
 		if err != nil {
-			return "", fmt.Errorf("Whoa! %s", err)
+			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
-		log.Printf("wrote %d bytes sending command `%s`", n, readCmd)
 	}
 	return bufio.NewReader(c.rw).ReadString('\n')
 }
