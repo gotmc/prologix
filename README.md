@@ -7,6 +7,7 @@ Go library to communicate with either a [Prologix][prologix-web] GPIB-ETHERNET
 [![Go Report Card][report badge]][report card]
 [![License Badge][license badge]][LICENSE.txt]
 
+
 ## Overview
 
 [Prologix][prologix-web] offers two GPIB controllers that enable a computer to
@@ -21,11 +22,15 @@ For more information, please see the User Manual and FAQ for either the
 [GPIB-ETHERNET controller][gpib-ethernet] or the [GPIB-USB
 controller][gpib-usb].
 
+
 ## Status
 
-- GPIB-USB VCP: Partially implemented
-- GPIB-USB Direct Driver: Not implemented
-- GPIB-ETHERNET: Not implemented
+- **GPIB-USB Direct Driver:** Not implemented
+- **GPIB Controller Mode:** Implemented. Provide an io.ReadWriter from a serial
+  port to use the Prologix GPIB-USB Controller as a Virtual COM Port (VCP) or
+  provide an io.ReadWriter from a network connection to use the Proglogix
+  GPIB-ETHERNT Controller.
+- **GPIB Device Mode:** Not implemented
 
 
 ## GPIB-USB
@@ -58,6 +63,7 @@ $ brew install libftdi
 
 To contribute, please fork the repository, create a feature branch, and then
 submit a [pull request][].
+
 
 ## License
 
