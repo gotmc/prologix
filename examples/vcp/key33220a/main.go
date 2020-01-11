@@ -6,7 +6,6 @@
 package main
 
 import (
-	"bufio"
 	"io"
 	"log"
 	"time"
@@ -81,31 +80,13 @@ func main() {
 		}
 	}
 
-	io.WriteString(port, "*idn?\n")
-	io.WriteString(port, "++read eoi\n")
-	id, err := bufio.NewReader(port).ReadString('\n')
-	if err != nil && err != io.EOF {
-		log.Fatalf("err reading serial port: %s", err)
-	}
-	log.Printf("idn = %s", id)
-	// buf := make([]byte, 8)
-	// n, err := port.Read(buf)
-	// if err != nil {
-	// 	log.Printf("error = %s", err)
-	// }
-	// if err == io.EOF {
-	// 	log.Printf("EOF error; read %d bytes = %s", n, buf[:n])
-	// } else {
-	// 	log.Printf("read %d bytes = %s", n, buf[:n])
-	// }
-
-	id2, err := gpib.Query("*idn?")
+	idn, err := gpib.Query("*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("err querying serial port: %s", err)
 	}
-	log.Printf("query idn = %s", id2)
+	log.Printf("query idn = %s", idn)
 
-	// Close the serial port and check for errors.
+	// Discard any unread data on the serial port and then close.
 	err = port.Flush()
 	if err != nil {
 		log.Printf("error flushing serial port: %s", err)

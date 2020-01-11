@@ -19,6 +19,8 @@ type Controller struct {
 	instrumentAddr int
 	auto           bool
 	eoi            bool
+	usbTerm        byte
+	eotChar        byte
 }
 
 // NewController creates a GPIB controller-in-charge at the given address using
@@ -30,9 +32,12 @@ func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) 
 		rw:             rw,
 		instrumentAddr: addr,
 		auto:           false,
+		usbTerm:        '\n',
+		eotChar:        '\n',
 	}
 	// Configure the Prologix GPIB controller.
 	addrCmd := fmt.Sprintf("addr %d", addr)
+	eotCharCmd := fmt.Sprintf("eot_char %d", c.eotChar)
 	cmds := []string{
 		"savecfg 0",       // Disable saving of configuration parameters in EPROM
 		addrCmd,           // Set the primary address.
@@ -41,7 +46,7 @@ func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) 
 		"eoi 1",           // Enable EOI assertion with last character.
 		"eos 0",           // Set GPIB termination.
 		"read_tmo_ms 500", // Set the read timeout to 500 ms.
-		"eot_char 10",     // Set the EOT char
+		eotCharCmd,        // Set the EOT char
 		"eot_enable 1",    // Append character when EOI detected?
 		"savecfg 1",       // Enable saving of configuration parameters in EPROM
 	}
@@ -71,14 +76,14 @@ func (c *Controller) Read(p []byte) (n int, err error) {
 // WriteString writes a string to the instrument at the currently assigned GPIB
 // address.
 func (c *Controller) WriteString(s string) (n int, err error) {
-	cmd := strings.TrimSpace(s) + "\n"
+	cmd := fmt.Sprintf("%s%c", strings.TrimSpace(s), c.usbTerm)
 	return c.Write([]byte(cmd))
 }
 
-// Query queries the instrument at the currently assigned GPIB using the Read
-// and Write methods.
-func (c *Controller) Query(s string) (string, error) {
-	_, err := fmt.Fprintf(c.rw, "%s\n", s)
+// Query queries the instrument at the currently assigned GPIB using the given
+// command.
+func (c *Controller) Query(cmd string) (string, error) {
+	_, err := fmt.Fprintf(c.rw, "%s%c", strings.TrimSpace(cmd), c.usbTerm)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
 	}
@@ -86,12 +91,12 @@ func (c *Controller) Query(s string) (string, error) {
 	// read.
 	if !c.auto {
 		readCmd := "++read eoi"
-		_, err := fmt.Fprintf(c.rw, "%s\n", readCmd)
+		_, err := fmt.Fprintf(c.rw, "%s%c", readCmd, c.usbTerm)
 		if err != nil {
 			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
 	}
-	return bufio.NewReader(c.rw).ReadString('\n')
+	return bufio.NewReader(c.rw).ReadString(c.eotChar)
 }
 
 // QueryCommand sends the given command to the Prologix controller and returns
@@ -100,11 +105,11 @@ func (c *Controller) Query(s string) (string, error) {
 // prepended. Addtionally, a new line is appended to act as the USB termination
 // character.
 func (c *Controller) QueryCommand(cmd string) (string, error) {
-	_, err := fmt.Fprintf(c.rw, "++%s\n", strings.ToLower(cmd))
+	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
 	if err != nil {
 		return "", err
 	}
-	return bufio.NewReader(c.rw).ReadString('\n')
+	return bufio.NewReader(c.rw).ReadString(c.eotChar)
 }
 
 // Command sends the given command to the Prologix controller. To indicate this
@@ -112,7 +117,7 @@ func (c *Controller) QueryCommand(cmd string) (string, error) {
 // GPIB, two plus signs `++` are prepended. Addtionally, a new line is appended
 // to act as the USB termination character.
 func (c *Controller) Command(cmd string) error {
-	_, err := fmt.Fprintf(c.rw, "++%s\n", strings.ToLower(cmd))
+	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
 	return err
 }
 
