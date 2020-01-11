@@ -3,6 +3,10 @@
 Go library to communicate with either a [Prologix][prologix-web] GPIB-ETHERNET
 (GPIB-LAN) controller or a GPIB-USB (HPIB-USB) controller.
 
+[![GoDoc][godoc badge]][godoc link]
+[![Go Report Card][report badge]][report card]
+[![License Badge][license badge]][LICENSE.txt]
+
 ## Overview
 
 [Prologix][prologix-web] offers two GPIB controllers that enable a computer to
@@ -63,10 +67,15 @@ submit a [pull request][].
 
 [ftdi-d2xx-drivers]: https://www.ftdichip.com/Drivers/D2XX.htm
 [ftdi-vcp-drivers]: https://www.ftdichip.com/Drivers/VCP.htm
+[godoc badge]: https://godoc.org/github.com/gotmc/prologix?status.svg
+[godoc link]: https://godoc.org/github.com/gotmc/prologix
 [gpib-ethernet]: http://prologix.biz/gpib-ethernet-controller.html
 [gpib-usb]: http://prologix.biz/gpib-usb-controller.html
 [homebrew]: https://brew.sh/
 [LICENSE.txt]: https://github.com/gotmc/prologix/blob/master/LICENSE.txt
+[license badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [prologix]: https://github.com/gotmc/prologix
 [prologix-web]: http://prologix.biz/
 [pull request]: https://help.github.com/articles/using-pull-requests
+[report badge]: https://goreportcard.com/badge/github.com/gotmc/prologix
+[report card]: https://goreportcard.com/report/github.com/gotmc/prologix
