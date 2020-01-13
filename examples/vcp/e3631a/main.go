@@ -6,7 +6,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"time"
@@ -20,7 +19,7 @@ func main() {
 	cfg := serial.Config{
 		Name:        "/dev/tty.usbserial-PXFJL0WD",
 		Baud:        115200,
-		ReadTimeout: time.Millisecond * 1000,
+		ReadTimeout: time.Millisecond * 500,
 	}
 	port, err := serial.OpenPort(&cfg)
 	if err != nil {
@@ -80,41 +79,26 @@ func main() {
 		}
 	}
 
-	// queries := []string{"*idn"}
-	// queryRange(gpib, queries)
+	// Query the identification of the function generator.
+	idn, err := gpib.Query("*idn?")
+	if err != nil && err != io.EOF {
+		log.Fatalf("error querying serial port: %s", err)
+	}
+	log.Printf("query idn = %s", idn)
 
-	io.WriteString(port, "*idn?\n")
-	io.WriteString(port, "++read eoi\n")
-	buf := make([]byte, 8)
-	n, err := port.Read(buf)
+	// Return local control to the front panel.
+	err = gpib.FrontPanel(true)
 	if err != nil {
-		log.Printf("error = %s", err)
-	}
-	if err == io.EOF {
-		log.Printf("EOF error; read %d bytes = %s", n, buf[:n])
-	} else {
-		log.Printf("read %d bytes = %s", n, buf[:n])
+		log.Fatalf("error setting local control for front panel: %s", err)
 	}
 
-	// Close the serial port and check for errors.
+	// Discard any unread data on the serial port and then close.
+	err = port.Flush()
+	if err != nil {
+		log.Printf("error flushing serial port: %s", err)
+	}
 	err = port.Close()
 	if err != nil {
-		log.Printf("error closing fg: %s", err)
-	}
-}
-
-func queryRange(gpib *prologix.Controller, r []string) {
-	for _, q := range r {
-		ws := fmt.Sprintf("%s?", q)
-		log.Printf("Querying %s", ws)
-		s, err := gpib.Query(ws)
-		log.Printf("Completed %s query", ws)
-		if err != nil && err != io.EOF {
-			log.Printf("Error reading: %v", err)
-		} else if err == io.EOF {
-			log.Printf("got EOF")
-		} else {
-			log.Printf("Query %s? = %s", q, s)
-		}
+		log.Printf("error closing serial port: %s", err)
 	}
 }
