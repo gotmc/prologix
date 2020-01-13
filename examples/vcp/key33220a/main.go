@@ -68,6 +68,13 @@ func main() {
 	}
 	log.Printf("Service request asserted = %t", srq)
 
+	// Query the GPIB Termination
+	term, err := gpib.GPIBTermination()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s", term)
+
 	// Send some commands to the Keysight 33220A function generator.
 	cmds := []string{
 		"burst:state off",
