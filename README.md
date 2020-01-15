@@ -1,6 +1,6 @@
 # prologix
 
-Go library to communicate with either a [Prologix][prologix-web] GPIB-ETHERNET
+Go package to communicate with either a [Prologix][prologix-web] GPIB-ETHERNET
 (GPIB-LAN) controller or a GPIB-USB (HPIB-USB) controller.
 
 [![GoDoc][godoc badge]][godoc link]
@@ -29,8 +29,21 @@ controller][gpib-usb].
 - **GPIB Controller Mode:** Implemented. Provide an io.ReadWriter from a serial
   port to use the Prologix GPIB-USB Controller as a Virtual COM Port (VCP) or
   provide an io.ReadWriter from a network connection to use the Proglogix
-  GPIB-ETHERNT Controller.
+  GPIB-ETHERNET Controller.
 - **GPIB Device Mode:** Not implemented
+
+
+## IVI Support
+
+The [prologix][] package can be used in conjunction with the [ivi][] package,
+which is a Go-based implementation of the Interchangeable Virtual Instrument
+(IVI) standard. The [IVI Specifications][ivi-specs] developed by the IVI
+Foundation provide standardized APIs for programming test instruments.
+
+The main advantage of using the [ivi][] package is not having to learn the
+[SCPI][] commands for each individual piece of test equipment. For instance,
+both the Agilent 33220A function generator and the Stanford Research Systems
+DS345 function generator can be programmed using one standard API with IVI.
 
 
 ## GPIB-USB
@@ -78,6 +91,7 @@ submit a [pull request][].
 [gpib-ethernet]: http://prologix.biz/gpib-ethernet-controller.html
 [gpib-usb]: http://prologix.biz/gpib-usb-controller.html
 [homebrew]: https://brew.sh/
+[ivi]: https://github.com/gotmc/ivi
 [LICENSE.txt]: https://github.com/gotmc/prologix/blob/master/LICENSE.txt
 [license badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [prologix]: https://github.com/gotmc/prologix
@@ -85,3 +99,4 @@ submit a [pull request][].
 [pull request]: https://help.github.com/articles/using-pull-requests
 [report badge]: https://goreportcard.com/badge/github.com/gotmc/prologix
 [report card]: https://goreportcard.com/report/github.com/gotmc/prologix
+[scpi]: http://www.ivifoundation.org/scpi/
