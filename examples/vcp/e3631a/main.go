@@ -17,7 +17,7 @@ import (
 func main() {
 	// Open a serial port.
 	cfg := serial.Config{
-		Name:        "/dev/tty.usbserial-PXFJL0WD",
+		Name:        "/dev/tty.usbserial-PX8X3YR6",
 		Baud:        115200,
 		ReadTimeout: time.Millisecond * 500,
 	}
@@ -65,9 +65,13 @@ func main() {
 	}
 	log.Printf("Service request asserted = %t", srq)
 
+	// Send the Selected Device Clear (SDC) message
+	err = gpib.ClearDevice()
+	if err != nil {
+		log.Printf("error clearing device: %s", err)
+	}
+
 	cmds := []string{
-		"*rst",
-		"*cls",
 		"apply p6v, 5.0, 1.0",
 		"outp on",
 	}
@@ -81,6 +85,13 @@ func main() {
 
 	// Query the identification of the function generator.
 	idn, err := gpib.Query("*idn?")
+	if err != nil && err != io.EOF {
+		log.Fatalf("error querying serial port: %s", err)
+	}
+	log.Printf("query idn = %s", idn)
+
+	// Query the identification of the function generator again.
+	idn, err = gpib.Query("*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
