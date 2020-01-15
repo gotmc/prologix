@@ -92,6 +92,7 @@ submit a [pull request][].
 [gpib-usb]: http://prologix.biz/gpib-usb-controller.html
 [homebrew]: https://brew.sh/
 [ivi]: https://github.com/gotmc/ivi
+[ivi-specs]: http://www.ivifoundation.org/
 [LICENSE.txt]: https://github.com/gotmc/prologix/blob/master/LICENSE.txt
 [license badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [prologix]: https://github.com/gotmc/prologix
