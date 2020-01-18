@@ -46,6 +46,28 @@ both the Agilent 33220A function generator and the Stanford Research Systems
 DS345 function generator can be programmed using one standard API with IVI.
 
 
+## Methods for Communication
+
+The Prologix GPIB controller strips all unescaped LF (`\n`, ASCII 10), CR
+(`\r`, ASCII 13), ESC (ASCII 27), and `+` (ASCII 43) characters. Therefore, to
+send binary data including one of those characters, they must be escaped.
+
+- `Read(p []byte) (n int, err error)` — Use for reading binary or text data
+  from the instrument or Prologix controller.
+- `Write(p []byte) (n int, err error)` — Use to send binary data to the
+  instrument. The CR, LF, ESC, and `+` characters will be automatically
+  escaped.
+- `WriteString(s string) (n int, err error` — Use to send ASCII data to the
+  instrument or commands to the Prologix controller.
+- `Command(format string, a ...interface{}) error` — Use to send a SCPI command
+  to the instrument that has no response. A newline character will
+  automatically be appended to the SCPI command sent to the instrument.
+- `Query(cmd string) (string, error)` — Use to send a SCPI query command to the
+  instrument and receive a string response. A newline character will
+  automatically be appended to the SCPI command sent to the instrument. If the
+  Prologix controller is not in auto read-after-write mode, then a `++read eos`
+  will also be sent before reading.
+
 ## GPIB-USB
 
 The GPIB-USB controller communicates with a computer either directly using the
