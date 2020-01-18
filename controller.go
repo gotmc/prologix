@@ -53,7 +53,7 @@ func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) 
 		cmds = append(cmds, "clr")
 	}
 	for _, cmd := range cmds {
-		if err := c.Command(cmd); err != nil {
+		if err := c.CommandController(cmd); err != nil {
 			return nil, err
 		}
 	}
@@ -98,12 +98,12 @@ func (c *Controller) Query(cmd string) (string, error) {
 	return bufio.NewReader(c.rw).ReadString(c.eotChar)
 }
 
-// QueryCommand sends the given command to the Prologix controller and returns
+// QueryController sends the given command to the Prologix controller and returns
 // its response as a string. To indicate this is a command for the Prologix
 // controller, thereby not transmitting over GPIB, two plus signs `++` are
 // prepended. Addtionally, a new line is appended to act as the USB termination
 // character.
-func (c *Controller) QueryCommand(cmd string) (string, error) {
+func (c *Controller) QueryController(cmd string) (string, error) {
 	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
 	if err != nil {
 		return "", err
@@ -111,11 +111,11 @@ func (c *Controller) QueryCommand(cmd string) (string, error) {
 	return bufio.NewReader(c.rw).ReadString(c.eotChar)
 }
 
-// Command sends the given command to the Prologix controller. To indicate this
-// is a command for the Prologix controller, thereby not transmitting over
-// GPIB, two plus signs `++` are prepended. Addtionally, a new line is appended
-// to act as the USB termination character.
-func (c *Controller) Command(cmd string) error {
+// CommandController sends the given command to the Prologix controller. To
+// indicate this is a command for the Prologix controller, thereby not
+// transmitting to the instrument over GPIB, two plus signs `++` are prepended.
+// Addtionally, a new line is appended to act as the USB termination character.
+func (c *Controller) CommandController(cmd string) error {
 	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
 	return err
 }

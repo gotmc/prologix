@@ -14,7 +14,7 @@ import (
 // AssertEOI determines if the Prologix controller is configured to assert the
 // EOI signal at the end of any command sent over the GPIB port.
 func (c *Controller) AssertEOI() (bool, error) {
-	s, err := c.QueryCommand("eoi")
+	s, err := c.QueryController("eoi")
 	if err != nil {
 		return false, err
 	}
@@ -37,14 +37,14 @@ func (c *Controller) AssertEOI() (bool, error) {
 // the Selected Device Clear (SDC) message to the currently selected GPIB
 // address.
 func (c *Controller) ClearDevice() error {
-	return c.Command("clr")
+	return c.CommandController("clr")
 }
 
 // ClearInterface sends the `ifc` command to the Prologix controller which
 // asserts the GPIB Interface Clear (IFC) signal for 150 microseconds making
 // the Prologix GPIB controller the Controller-In-Charge.
 func (c *Controller) ClearInterface() error {
-	return c.Command("ifc")
+	return c.CommandController("ifc")
 }
 
 // FrontPanel enables or disables front panel operation for the instrument at
@@ -56,13 +56,13 @@ func (c *Controller) FrontPanel(enable bool) error {
 	if enable {
 		cmd = "loc" // Local
 	}
-	return c.Command(cmd)
+	return c.CommandController(cmd)
 }
 
 // GPIBTermination uses the Prologix `eos` command to query the GPIB
 // terminator.
 func (c *Controller) GPIBTermination() (GpibTerm, error) {
-	s, err := c.QueryCommand("eos")
+	s, err := c.QueryController("eos")
 	if err != nil {
 		return 0, err
 	}
@@ -76,7 +76,7 @@ func (c *Controller) GPIBTermination() (GpibTerm, error) {
 // InstrumentAddress returns the GPIB address for the instrument under control.
 func (c *Controller) InstrumentAddress() (int, error) {
 	// FIXME(mdr): Need to update so that it can handle a secondary address.
-	s, err := c.QueryCommand("addr")
+	s, err := c.QueryController("addr")
 	if err != nil {
 		return 0, err
 	}
@@ -95,7 +95,7 @@ func (c *Controller) InstrumentAddress() (int, error) {
 // ReadAfterWrite determines if the Prologix controller is configured to
 // automatically read after a write.
 func (c *Controller) ReadAfterWrite() (bool, error) {
-	s, err := c.QueryCommand("auto")
+	s, err := c.QueryController("auto")
 	if err != nil {
 		return false, err
 	}
@@ -117,7 +117,7 @@ func (c *Controller) ReadAfterWrite() (bool, error) {
 // ReadTimeout queries the read timeout value in milliseconds from the Prologix
 // GPIB controller.
 func (c *Controller) ReadTimeout() (int, error) {
-	s, err := c.QueryCommand("read_tmo_ms")
+	s, err := c.QueryController("read_tmo_ms")
 	if err != nil {
 		return 0, err
 	}
@@ -135,13 +135,13 @@ func (c *Controller) ReadTimeout() (int, error) {
 // Reset performs a power-on reset of the controller. The process takes about 5
 // seconds. All input received during this time are ignored.
 func (c *Controller) Reset() error {
-	return c.Command("rst")
+	return c.CommandController("rst")
 }
 
 // ServiceRequest sends the `srq` command to the Prologix controller to
 // determine if the GPIB SRQ signal is asserted or not.
 func (c *Controller) ServiceRequest() (bool, error) {
-	s, err := c.QueryCommand("srq")
+	s, err := c.QueryController("srq")
 	if err != nil {
 		return false, err
 	}
@@ -163,7 +163,7 @@ func (c *Controller) SetAssertEOI(enable bool) error {
 	if enable {
 		cmd = "eoi 1"
 	}
-	err := c.Command(cmd)
+	err := c.CommandController(cmd)
 	// As long as there wasn't an error setting the eoi mode on the Prologix
 	// controller, set the eoi status in the controller struct.
 	if err != nil {
@@ -177,13 +177,13 @@ func (c *Controller) SetAssertEOI(enable bool) error {
 // be appended as the GPIB terminator to all data sent from the Prologix
 // Controller to the instrument.
 func (c *Controller) SetGPIBTermination(term GpibTerm) error {
-	return c.Command(fmt.Sprintf("eos %d", term))
+	return c.CommandController(fmt.Sprintf("eos %d", term))
 }
 
 // SetInstrumentAddress sets the GPIB address for the instrument under control.
 func (c *Controller) SetInstrumentAddress(addr int) error {
 	cmd := fmt.Sprintf("addr %d", addr)
-	err := c.Command(cmd)
+	err := c.CommandController(cmd)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (c *Controller) SetReadAfterWrite(enable bool) error {
 	if enable {
 		cmd = "auto 1"
 	}
-	err := c.Command(cmd)
+	err := c.CommandController(cmd)
 	// As long as there wasn't an error setting the auto mode on the Prologix
 	// controller, set the auto status in the controller struct.
 	if err != nil {
@@ -214,10 +214,10 @@ func (c *Controller) SetReadTimeout(timeout int) error {
 	if timeout < 1 || timeout > 3000 {
 		return fmt.Errorf("read timeout outside 1 to 3000 ms; attempted to set to %d", timeout)
 	}
-	return c.Command(fmt.Sprintf("read_tmo_ms %d", timeout))
+	return c.CommandController(fmt.Sprintf("read_tmo_ms %d", timeout))
 }
 
 // Version returns the version string from the Prologix GPIB controller.
 func (c *Controller) Version() (string, error) {
-	return c.QueryCommand("ver")
+	return c.QueryController("ver")
 }
