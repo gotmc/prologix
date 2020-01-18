@@ -84,7 +84,7 @@ func main() {
 		"burs:stat on",
 	}
 	for _, cmd := range cmds {
-		_, err := gpib.WriteString(cmd)
+		err := gpib.Command(cmd)
 		if err != nil {
 			log.Fatal(err)
 		}

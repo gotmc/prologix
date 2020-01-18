@@ -76,11 +76,30 @@ func (c *Controller) Read(p []byte) (n int, err error) {
 // address.
 func (c *Controller) WriteString(s string) (n int, err error) {
 	cmd := fmt.Sprintf("%s%c", strings.TrimSpace(s), c.usbTerm)
-	return c.Write([]byte(cmd))
+	return c.rw.Write([]byte(cmd))
+}
+
+// Command formats according to a format specifier if provided and sends a
+// SCPI/ASCII command to the instrument at the currently assigned GPIB address.
+// All leading and trailing whitespace is removed before appending the USB
+// terminator to the command sent to the Prologix.
+func (c *Controller) Command(format string, a ...interface{}) error {
+	cmd := format
+	if a != nil {
+		cmd = fmt.Sprintf(format, a...)
+	}
+	_, err := c.WriteString(fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm))
+	return err
 }
 
 // Query queries the instrument at the currently assigned GPIB using the given
-// command.
+// SCPI/ASCII command. The cmd string does not need to include a new line
+// character, since all leading and trailing whitespace is removed before
+// appending the USB terminator to the command sent to the Prologix.  When data
+// from host is received over USB, the Prologix controller removes all
+// non-escaped LF, CR and ESC characters and appends the GPIB terminator, as
+// specified by the `eos` command, before sending the data to instruments.  To
+// change the GPIB terminator use the SetGPIBTermination method.
 func (c *Controller) Query(cmd string) (string, error) {
 	_, err := fmt.Fprintf(c.rw, "%s%c", strings.TrimSpace(cmd), c.usbTerm)
 	if err != nil {
