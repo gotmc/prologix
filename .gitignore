@@ -1,5 +1,7 @@
 # Binaries for programs and plugins
 /examples/vcp/e3631a/e3631a
+/examples/vcp/e3631a/e3631a2
+/examples/vcp/fluke45/fluke45
 /examples/vcp/key33220a/key33220a
 
 *.exe

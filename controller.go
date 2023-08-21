@@ -31,6 +31,7 @@ func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) 
 		rw:             rw,
 		instrumentAddr: addr,
 		auto:           false,
+		eoi:            true,
 		usbTerm:        '\n',
 		eotChar:        '\n',
 	}
