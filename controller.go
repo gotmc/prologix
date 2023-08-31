@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 )
 
@@ -77,6 +78,7 @@ func (c *Controller) Read(p []byte) (n int, err error) {
 // address.
 func (c *Controller) WriteString(s string) (n int, err error) {
 	cmd := fmt.Sprintf("%s%c", strings.TrimSpace(s), c.usbTerm)
+	log.Printf("prologix driver writing string: %s", cmd)
 	return c.rw.Write([]byte(cmd))
 }
 
@@ -89,6 +91,8 @@ func (c *Controller) Command(format string, a ...interface{}) error {
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
+	// TODO: Why am I trimming whitespace and adding the USB terminatorhere if
+	// I'm calling the WriteString method, which does that as well?
 	_, err := c.WriteString(fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm))
 	return err
 }
@@ -115,7 +119,11 @@ func (c *Controller) Query(cmd string) (string, error) {
 			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
 	}
-	return bufio.NewReader(c.rw).ReadString(c.eotChar)
+	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
+	if err == io.EOF {
+		return s, nil
+	}
+	return s, err
 }
 
 // QueryController sends the given command to the Prologix controller and returns
