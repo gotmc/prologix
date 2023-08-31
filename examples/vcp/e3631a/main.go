@@ -29,6 +29,9 @@ func main() {
 	// Create a new GPIB controller using the aforementioned serial port
 	// communicating with the instrument at the given GPIB address.
 	gpib, err := prologix.NewController(port, 5, true)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Query the GPIB instrument address.
 	addr, err := gpib.InstrumentAddress()
@@ -72,8 +75,8 @@ func main() {
 	}
 
 	cmds := []string{
-		"apply p6v, 5.0, 1.0",
-		"outp on",
+		"apply p6v, 4.0, 1.0\n",
+		"outp on\n",
 	}
 
 	for _, cmd := range cmds {
@@ -82,6 +85,20 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	// Query the voltage output
+	vc, err := gpib.Query("appl? p6v")
+	if err != nil && err != io.EOF {
+		log.Fatalf("error querying serial port: %s", err)
+	}
+	log.Printf("voltage, current = %s", vc)
+
+	// Query the output state
+	state, err := gpib.Query("OUTP:STAT?")
+	if err != nil && err != io.EOF {
+		log.Fatalf("error querying serial port: %s", err)
+	}
+	log.Printf("output state = %s", state)
 
 	// Query the identification of the function generator.
 	idn, err := gpib.Query("*idn?")
