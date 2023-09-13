@@ -8,27 +8,22 @@ package main
 import (
 	"io"
 	"log"
-	"time"
 
 	"github.com/gotmc/prologix"
-	"github.com/tarm/serial"
+	"github.com/gotmc/prologix/driver/vcp"
 )
 
 func main() {
-	// Open a serial port.
-	cfg := serial.Config{
-		Name:        "/dev/tty.usbserial-PX8X3YR6",
-		Baud:        115200,
-		ReadTimeout: time.Millisecond * 500,
-	}
-	port, err := serial.OpenPort(&cfg)
+	// Open virtual comm port.
+	serialPort := "/dev/tty.usbserial-PX8X3YR6"
+	vcp, err := vcp.NewVCP(serialPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create a new GPIB controller using the aforementioned serial port and
 	// communicating with the instrument at GPIB address 4.
-	gpib, err := prologix.NewController(port, 4, true)
+	gpib, err := prologix.NewController(vcp, 4, true)
 	if err != nil {
 		log.Fatalf("NewController error: %s", err)
 	}
@@ -104,11 +99,11 @@ func main() {
 	}
 
 	// Discard any unread data on the serial port and then close.
-	err = port.Flush()
+	err = vcp.Flush()
 	if err != nil {
 		log.Printf("error flushing serial port: %s", err)
 	}
-	err = port.Close()
+	err = vcp.Close()
 	if err != nil {
 		log.Printf("error closing serial port: %s", err)
 	}

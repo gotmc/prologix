@@ -8,28 +8,29 @@ package vcp
 import (
 	"io"
 	"strings"
-	"time"
 
-	"github.com/tarm/serial"
+	"go.bug.st/serial"
 )
 
 // VCP models a Prologix GPIB-USB controller communicating using a Virtual COM
 // Port (VCP).
 type VCP struct {
-	port *serial.Port
+	port serial.Port
 }
 
 // NewVCP creates a new Virtual COM Port (VCP).
 func NewVCP(serialPort string) (*VCP, error) {
-	cfg := &serial.Config{
-		Name:        serialPort,
-		Baud:        115200,
-		ReadTimeout: time.Millisecond * 500,
+	mode := &serial.Mode{
+		BaudRate: 115200,
+		Parity:   serial.EvenParity,
+		DataBits: 7,
+		StopBits: serial.OneStopBit,
 	}
-	port, err := serial.OpenPort(cfg)
+	port, err := serial.Open(serialPort, mode)
 	if err != nil {
 		return nil, err
 	}
+
 	vcp := VCP{
 		port: port,
 	}
@@ -49,6 +50,14 @@ func (vcp *VCP) Read(p []byte) (n int, err error) {
 // Close closes the underlying serial port.
 func (vcp *VCP) Close() error {
 	return vcp.port.Close()
+}
+
+func (vcp *VCP) Flush() error {
+	err := vcp.port.ResetInputBuffer()
+	if err != nil {
+		return err
+	}
+	return vcp.port.ResetOutputBuffer()
 }
 
 // WriteString trims all whitespace, adds a newline, and then writes the

@@ -106,23 +106,30 @@ func (c *Controller) Command(format string, a ...interface{}) error {
 // specified by the `eos` command, before sending the data to instruments.  To
 // change the GPIB terminator use the SetGPIBTermination method.
 func (c *Controller) Query(cmd string) (string, error) {
-	_, err := fmt.Fprintf(c.rw, "%s%c", strings.TrimSpace(cmd), c.usbTerm)
+	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
+	log.Printf("sending cmd = %s", cmd)
+	_, err := fmt.Fprint(c.rw, cmd)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
 	}
 	// If read-after-write is disabled, need to tell the Prologix controller to
 	// read.
 	if !c.auto {
+		log.Print("not configured for auto")
 		readCmd := "++read eoi"
 		_, err := fmt.Fprintf(c.rw, "%s%c", readCmd, c.usbTerm)
 		if err != nil {
 			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
 	}
+	log.Print("about to read buffer")
+	log.Printf("eot char = %x", c.eotChar)
 	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
 	if err == io.EOF {
+		log.Printf("found EOF")
 		return s, nil
 	}
+	log.Print("read buffer")
 	return s, err
 }
 
