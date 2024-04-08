@@ -27,6 +27,9 @@ func main() {
 	// Create a new GPIB controller using the aforementioned serial port
 	// communicating with the instrument at the given GPIB address.
 	gpib, err := prologix.NewController(vcp, 10, true)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Query the GPIB instrument address.
 	addr, err := gpib.InstrumentAddress()
@@ -106,7 +109,7 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		_, err := gpib.WriteString(cmd)
+		_, err = gpib.WriteString(cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -115,6 +118,9 @@ func main() {
 	// Query the identification of the DMM
 	log.Printf("Querying with ReadAfterWrite disabled")
 	err = gpib.SetReadAfterWrite(false)
+	if err != nil {
+		log.Fatal(err)
+	}
 	idn, err := gpib.Query("*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
@@ -126,6 +132,9 @@ func main() {
 	// Query the identification of the DMM
 	log.Printf("Querying with ReadAfterWrite enabled")
 	err = gpib.SetReadAfterWrite(true)
+	if err != nil {
+		log.Fatal(err)
+	}
 	idn, err = gpib.Query("*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)

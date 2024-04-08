@@ -127,7 +127,10 @@ func (c *Controller) ReadTimeout() (int, error) {
 	}
 	readTimeout := int(i)
 	if readTimeout < 1 || readTimeout > 3000 {
-		return 0, fmt.Errorf("read timeout must be between 1 and 3000 ms was set to %d", readTimeout)
+		return 0, fmt.Errorf(
+			"read timeout must be between 1 and 3000 ms was set to %d",
+			readTimeout,
+		)
 	}
 	return readTimeout, nil
 }
