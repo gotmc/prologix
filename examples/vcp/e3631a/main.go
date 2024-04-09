@@ -6,6 +6,7 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 
@@ -13,9 +14,35 @@ import (
 	"github.com/gotmc/prologix/driver/vcp"
 )
 
+var (
+	debugLevel uint
+	serialPort string
+)
+
+func init() {
+	// Get the debug level from CLI flag.
+	const (
+		defaultLevel = 1
+		debugUsage   = "USB debug level"
+	)
+	flag.UintVar(&debugLevel, "debug", defaultLevel, debugUsage)
+	flag.UintVar(&debugLevel, "d", defaultLevel, debugUsage+" (shorthand)")
+
+	// Get Virtual COM Port (VCP) serial port for Prologix.
+	flag.StringVar(
+		&serialPort,
+		"port",
+		"/dev/tty.usbserial-PX8X3YR6",
+		"Serial port for Prologix VCP GPIB controller",
+	)
+}
+
 func main() {
+	// Parse the flags
+	flag.Parse()
+
 	// Open virtual comm port.
-	serialPort := "/dev/tty.usbserial-PX8X3YR6"
+	log.Printf("Serial port = %s", serialPort)
 	vcp, err := vcp.NewVCP(serialPort)
 	if err != nil {
 		log.Fatal(err)
