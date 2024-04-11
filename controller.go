@@ -91,9 +91,12 @@ func (c *Controller) Command(format string, a ...any) error {
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
+	log.Printf("sending cmd (terminator not yet added): %#v", cmd)
 	// TODO: Why am I trimming whitespace and adding the USB terminator here if
 	// I'm calling the WriteString method, which does that as well?
-	_, err := fmt.Fprintf(c.rw, "%s%c", strings.TrimSpace(cmd), c.usbTerm)
+	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
+	log.Printf("sending cmd (with terminator added): %#v", cmd)
+	_, err := fmt.Fprint(c.rw, cmd)
 	return err
 }
 
@@ -122,7 +125,7 @@ func (c *Controller) Query(cmd string) (string, error) {
 			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
 	}
-	log.Print("about to read buffer")
+	log.Print("checkpoint_rb: about to read buffer")
 	log.Printf("eot char = %#v", c.eotChar)
 	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
 	if err == io.EOF {

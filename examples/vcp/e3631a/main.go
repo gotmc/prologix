@@ -16,19 +16,10 @@ import (
 )
 
 var (
-	debugLevel uint
 	serialPort string
 )
 
 func init() {
-	// Get the debug level from CLI flag.
-	const (
-		defaultLevel = 1
-		debugUsage   = "USB debug level"
-	)
-	flag.UintVar(&debugLevel, "debug", defaultLevel, debugUsage)
-	flag.UintVar(&debugLevel, "d", defaultLevel, debugUsage+" (shorthand)")
-
 	// Get Virtual COM Port (VCP) serial port for Prologix.
 	flag.StringVar(
 		&serialPort,
@@ -98,7 +89,7 @@ func main() {
 	}
 
 	// Query the identification of the function generator.
-	idn, err := gpib.Query("*idn?\n")
+	idn, err := gpib.Query("*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
