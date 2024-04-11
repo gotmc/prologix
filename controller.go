@@ -86,7 +86,7 @@ func (c *Controller) WriteString(s string) (n int, err error) {
 // SCPI/ASCII command to the instrument at the currently assigned GPIB address.
 // All leading and trailing whitespace is removed before appending the USB
 // terminator to the command sent to the Prologix.
-func (c *Controller) Command(format string, a ...interface{}) error {
+func (c *Controller) Command(format string, a ...any) error {
 	cmd := format
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
