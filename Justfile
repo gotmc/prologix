@@ -28,9 +28,9 @@ outdated:
   go list -u -m all
 
 # Run the Prologix VCP GPIB Keysight E3631A example application.
-ex1:
+ex1 port:
   #!/usr/bin/env bash
   echo '# Prologix VCP GPIB Keysight E3631A Example Application'
   cd {{justfile_directory()}}/examples/vcp/e3631a
   env go build -o e3631a
-  ./e3631a -port="/dev/tty.usbserial-PX8X3YR6"
+  ./e3631a -port={{port}}
