@@ -107,7 +107,7 @@ func (c *Controller) Command(format string, a ...any) error {
 // change the GPIB terminator use the SetGPIBTermination method.
 func (c *Controller) Query(cmd string) (string, error) {
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
-	log.Printf("sending cmd = %s", cmd)
+	log.Printf("sending query cmd: %#v", cmd)
 	_, err := fmt.Fprint(c.rw, cmd)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
@@ -123,7 +123,7 @@ func (c *Controller) Query(cmd string) (string, error) {
 		}
 	}
 	log.Print("about to read buffer")
-	log.Printf("eot char = %x", c.eotChar)
+	log.Printf("eot char = %#v", c.eotChar)
 	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
 	if err == io.EOF {
 		log.Printf("found EOF")
