@@ -91,9 +91,9 @@ func (c *Controller) Command(format string, a ...any) error {
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
-	// TODO: Why am I trimming whitespace and adding the USB terminatorhere if
+	// TODO: Why am I trimming whitespace and adding the USB terminator here if
 	// I'm calling the WriteString method, which does that as well?
-	_, err := c.WriteString(fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm))
+	_, err := fmt.Fprintf(c.rw, "%s%c", strings.TrimSpace(cmd), c.usbTerm)
 	return err
 }
 
@@ -117,7 +117,7 @@ func (c *Controller) Query(cmd string) (string, error) {
 	if !c.auto {
 		log.Print("not configured for auto")
 		readCmd := "++read eoi"
-		_, err := fmt.Fprintf(c.rw, "%s%c", readCmd, c.usbTerm)
+		_, err = fmt.Fprintf(c.rw, "%s%c", readCmd, c.usbTerm)
 		if err != nil {
 			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
@@ -133,11 +133,11 @@ func (c *Controller) Query(cmd string) (string, error) {
 	return s, err
 }
 
-// QueryController sends the given command to the Prologix controller and returns
-// its response as a string. To indicate this is a command for the Prologix
-// controller, thereby not transmitting over GPIB, two plus signs `++` are
-// prepended. Addtionally, a new line is appended to act as the USB termination
-// character.
+// QueryController sends the given command to the Prologix controller and
+// returns its response as a string. To indicate this is a command for the
+// Prologix controller, thereby not transmitting over GPIB, two plus signs `++`
+// are prepended. Addtionally, a new line is appended to act as the USB
+// termination character.
 func (c *Controller) QueryController(cmd string) (string, error) {
 	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
 	if err != nil {
