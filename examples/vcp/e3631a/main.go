@@ -12,6 +12,7 @@ import (
 
 	"github.com/gotmc/prologix"
 	"github.com/gotmc/prologix/driver/vcp"
+	"github.com/gotmc/query"
 )
 
 var (
@@ -96,9 +97,15 @@ func main() {
 		log.Printf("error clearing device: %s", err)
 	}
 
+	// Query the identification of the function generator.
+	idn, err := gpib.Query("*idn?\n")
+	if err != nil && err != io.EOF {
+		log.Fatalf("error querying serial port: %s", err)
+	}
+	log.Printf("query idn = %s", idn)
+
 	cmds := []string{
-		"apply p6v, 4.0, 1.0\n",
-		"outp on\n",
+		"outp off",
 	}
 
 	for _, cmd := range cmds {
@@ -108,26 +115,53 @@ func main() {
 		}
 	}
 
-	// Query the voltage output
+	// Query the output state
+	state, err := query.Bool(gpib, "OUTP:STAT?")
+	if err != nil && err != io.EOF {
+		log.Fatalf("error querying serial port: %s", err)
+	}
+	if state {
+		log.Println("output is enabled")
+	} else {
+		log.Println("output is disabled")
+	}
+
+	cmds = []string{
+		"apply p6v,4.1,1.2",
+		"outp on",
+	}
+
+	for _, cmd := range cmds {
+		err = gpib.Command(cmd)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Query the voltage and current at the output
 	vc, err := gpib.Query("appl? p6v")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("voltage, current = %s", vc)
 
-	// Query the output state
-	state, err := gpib.Query("OUTP:STAT?")
+	// Query the voltage at the output
+	volt, err := gpib.Query("meas? p6v")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
-	log.Printf("output state = %s", state)
+	log.Printf("voltage = %s", volt)
 
-	// Query the identification of the function generator.
-	idn, err := gpib.Query("*idn?\n")
+	// Query the output state
+	state, err = query.Bool(gpib, "OUTP:STAT?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
-	log.Printf("query idn = %s", idn)
+	if state {
+		log.Println("output is enabled")
+	} else {
+		log.Println("output is disabled")
+	}
 
 	// Query the identification of the function generator again.
 	idn, err = gpib.Query("*idn?")
