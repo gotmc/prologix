@@ -91,11 +91,11 @@ func (c *Controller) Command(format string, a ...any) error {
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
-	log.Printf("sending cmd (terminator not yet added): %#v", cmd)
+	// log.Printf("sending cmd (terminator not yet added): %#v", cmd)
 	// TODO: Why am I trimming whitespace and adding the USB terminator here if
 	// I'm calling the WriteString method, which does that as well?
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
-	log.Printf("sending cmd (with terminator added): %#v", cmd)
+	// log.Printf("sending cmd (with terminator added): %#v", cmd)
 	_, err := fmt.Fprint(c.rw, cmd)
 	return err
 }
@@ -110,7 +110,7 @@ func (c *Controller) Command(format string, a ...any) error {
 // change the GPIB terminator use the SetGPIBTermination method.
 func (c *Controller) Query(cmd string) (string, error) {
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
-	log.Printf("sending query cmd: %#v", cmd)
+	// log.Printf("sending query cmd: %#v", cmd)
 	_, err := fmt.Fprint(c.rw, cmd)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
@@ -118,21 +118,17 @@ func (c *Controller) Query(cmd string) (string, error) {
 	// If read-after-write is disabled, need to tell the Prologix controller to
 	// read.
 	if !c.auto {
-		log.Print("not configured for auto")
 		readCmd := "++read eoi"
 		_, err = fmt.Fprintf(c.rw, "%s%c", readCmd, c.usbTerm)
 		if err != nil {
 			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
 		}
 	}
-	log.Print("checkpoint_rb: about to read buffer")
-	log.Printf("eot char = %#v", c.eotChar)
 	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
 	if err == io.EOF {
 		log.Printf("found EOF")
 		return s, nil
 	}
-	log.Print("read buffer")
 	return s, err
 }
 
