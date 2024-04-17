@@ -28,9 +28,25 @@ outdated:
   go list -u -m all
 
 # Run the Prologix VCP GPIB Keysight E3631A example application.
-ex1 port:
+key3631 port gpib:
   #!/usr/bin/env bash
   echo '# Prologix VCP GPIB Keysight E3631A Example Application'
   cd {{justfile_directory()}}/examples/vcp/e3631a
   env go build -o e3631a
-  ./e3631a -port={{port}}
+  ./e3631a -port={{port}} -gpib={{gpib}}
+
+# Run the Prologix VCP GPIB Keysight 33220A example application.
+key33220 port gpib:
+  #!/usr/bin/env bash
+  echo '# Prologix VCP GPIB Keysight 33220A Example Application'
+  cd {{justfile_directory()}}/examples/vcp/key33220a
+  env go build -o key33220a
+  ./key33220a -port={{port}} -gpib={{gpib}}
+
+# Run the Prologix VCP GPIB SRS DS345 example application.
+ds345 port gpib:
+  #!/usr/bin/env bash
+  echo '# Prologix VCP GPIB SRS DS345 Example Application'
+  cd {{justfile_directory()}}/examples/vcp/ds345
+  env go build -o ds345
+  ./ds345 -port={{port}} -gpib={{gpib}}

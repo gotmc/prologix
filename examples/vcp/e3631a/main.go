@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	serialPort string
+	serialPort  string
+	gpibAddress int
 )
 
 func init() {
@@ -27,6 +28,8 @@ func init() {
 		"/dev/tty.usbserial-PX8X3YR6",
 		"Serial port for Prologix VCP GPIB controller",
 	)
+
+	flag.IntVar(&gpibAddress, "gpib", 5, "GPIB address for the E3631A")
 }
 
 func main() {
@@ -42,7 +45,8 @@ func main() {
 
 	// Create a new GPIB controller using the aforementioned serial port
 	// communicating with the instrument at the given GPIB address.
-	gpib, err := prologix.NewController(vcp, 5, true)
+	log.Printf("GPIB address = %d", gpibAddress)
+	gpib, err := prologix.NewController(vcp, gpibAddress, true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,10 +87,18 @@ func main() {
 	log.Printf("Service request asserted = %t", srq)
 
 	// Send the Selected Device Clear (SDC) message
+	log.Println("Sending the Selected Device Clear (SDC) message")
 	err = gpib.ClearDevice()
 	if err != nil {
 		log.Printf("error clearing device: %s", err)
 	}
+
+	// Query the GPIB Termination
+	term, err := gpib.GPIBTermination()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s", term)
 
 	// Query the identification of the function generator.
 	idn, err := gpib.Query("*idn?")

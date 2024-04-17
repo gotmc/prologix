@@ -6,48 +6,24 @@
 package main
 
 import (
-	"flag"
 	"io"
 	"log"
-	"time"
 
 	"github.com/gotmc/prologix"
 	"github.com/gotmc/prologix/driver/vcp"
 )
 
-var (
-	serialPort  string
-	gpibAddress int
-)
-
-func init() {
-	// Get Virtual COM Port (VCP) serial port for Prologix.
-	flag.StringVar(
-		&serialPort,
-		"port",
-		"/dev/tty.usbserial-PX8X3YR6",
-		"Serial port for Prologix VCP GPIB controller",
-	)
-
-	flag.IntVar(&gpibAddress, "gpib", 6, "GPIB address for the Keysight 33220A")
-}
-
 func main() {
-	// Parse the flags
-	flag.Parse()
-
 	// Open virtual comm port.
-	log.Printf("Serial port = %s", serialPort)
+	serialPort := "/dev/tty.usbserial-PX8X3YR6"
 	vcp, err := vcp.NewVCP(serialPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Create a new GPIB controller using the aforementioned serial port
-	// communicating with the instrument at the given GPIB address.
-	log.Printf("Create new Prolgoix controller using GPIB address %d",
-		gpibAddress)
-	gpib, err := prologix.NewController(vcp, gpibAddress, false)
+	// Create a new GPIB controller using the aforementioned serial port and
+	// communicating with the instrument at GPIB address 4.
+	gpib, err := prologix.NewController(vcp, 4, true)
 	if err != nil {
 		log.Fatalf("NewController error: %s", err)
 	}
@@ -87,13 +63,6 @@ func main() {
 	}
 	log.Printf("Service request asserted = %t", srq)
 
-	// Send the Selected Device Clear (SDC) message
-	log.Println("Sending the Selected Device Clear (SDC) message")
-	err = gpib.ClearDevice()
-	if err != nil {
-		log.Printf("error clearing device: %s", err)
-	}
-
 	// Query the GPIB Termination
 	term, err := gpib.GPIBTermination()
 	if err != nil {
@@ -111,17 +80,17 @@ func main() {
 	// Send commands to the function generator required to create a coded carrier
 	// operating at 100 Hz with 400 ms on time and 200 ms off time.
 	cmds := []string{
-		"SYST:REM", // Set the instrument state to remote
-		"OUTP OFF", // Disable the output
-		// "BURS:STAT OFF",        // Disable burst mode (i.e., modulation)
-		"APPL:SIN 100,0.5,0.0", // 100 Hz, 0.5 Vpp amp, 0.0Vdc offset
-		"BURS:MODE TRIG",       // Select the triggered burst mode
-		"BURS:NCYC 40",         // Set burst count to 40 (nearest integer)
-		"BURS:INT:PER 0.6",     // Set burst period to 600 ms
-		"BURS:PHAS 0",          // Set starting phase of burst to 0 degrees
-		"BURS:STAT ON",         // Enable burst mode (i.e., modulation)
-		"OUTP ON",              // Enable the output
-		"SYST:LOC",             // Set the instrument state to local
+		"MENA0",      // Disable modulation
+		"FUNC 0",     // Set output function to sine wave
+		"FREQ 100.0", // Set frequency to 100 Hz
+		"AMPL 0.5VP", // Set the amplitude to 0.5 Vpp
+		"OFFS 0.0",   // Set the offset to 0 Vdc
+		"PHSE 0.0",   // Set the phase to 0 degrees
+		"BCNT 40",    // Set burst count to 40 (rounded to nearest integer)
+		"TSRC1",      // Use internal trigger
+		"TRAT 1.667", // Set the trigger rate to 1.667 Hz
+		"MTYP5",      // Set the modulation to burst
+		"MENA1",      // Enable modulation
 	}
 	for _, cmd := range cmds {
 		log.Printf("Sending command: %s", cmd)
@@ -129,9 +98,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		// FIXME: I had to enter this to get the function generator to accept all
-		// commands.
-		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Return local control to the front panel.
