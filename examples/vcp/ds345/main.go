@@ -6,16 +6,38 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
+	"time"
 
 	"github.com/gotmc/prologix"
 	"github.com/gotmc/prologix/driver/vcp"
 )
 
+var (
+	serialPort  string
+	gpibAddress int
+)
+
+func init() {
+	// Get Virtual COM Port (VCP) serial port for Prologix.
+	flag.StringVar(
+		&serialPort,
+		"port",
+		"/dev/tty.usbserial-PX8X3YR6",
+		"Serial port for Prologix VCP GPIB controller",
+	)
+
+	flag.IntVar(&gpibAddress, "gpib", 6, "GPIB address for the Keysight 33220A")
+}
+
 func main() {
+	// Parse the flags
+	flag.Parse()
+
 	// Open virtual comm port.
-	serialPort := "/dev/tty.usbserial-PX8X3YR6"
+	log.Printf("Serial port = %s", serialPort)
 	vcp, err := vcp.NewVCP(serialPort)
 	if err != nil {
 		log.Fatal(err)
@@ -23,7 +45,7 @@ func main() {
 
 	// Create a new GPIB controller using the aforementioned serial port and
 	// communicating with the instrument at GPIB address 4.
-	gpib, err := prologix.NewController(vcp, 4, true)
+	gpib, err := prologix.NewController(vcp, gpibAddress, false)
 	if err != nil {
 		log.Fatalf("NewController error: %s", err)
 	}
@@ -98,6 +120,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Return local control to the front panel.
