@@ -15,29 +15,58 @@ import (
 
 // Controller models a GPIB controller-in-charge.
 type Controller struct {
-	rw             io.ReadWriter
-	instrumentAddr int
-	auto           bool
-	eoi            bool
-	usbTerm        byte
-	eotChar        byte
+	rw               io.ReadWriter
+	primaryAddr      int
+	hasSecondaryAddr bool
+	secondaryAddr    int
+	auto             bool
+	eoi              bool
+	usbTerm          byte
+	eotChar          byte
 }
+
+// ControllerOption applies an option to the controller.
+type ControllerOption func(*Controller)
 
 // NewController creates a GPIB controller-in-charge at the given address using
 // the given Prologix driver, which can either be a Virtual COM Port (VCP), USB
 // direct, or Ethernet. Enable clear to send the Selected Device Clear (SDC)
-// message to the GPIB address.
-func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) {
+// message to the GPIB address. Optionally controller configuration can be
+// included using a ControllerOption.
+func NewController(
+	rw io.ReadWriter,
+	addr int,
+	clear bool,
+	opts ...ControllerOption,
+) (*Controller, error) {
 	c := Controller{
-		rw:             rw,
-		instrumentAddr: addr,
-		auto:           false,
-		eoi:            true,
-		usbTerm:        '\n',
-		eotChar:        '\n',
+		rw:               rw,
+		primaryAddr:      addr,
+		hasSecondaryAddr: false,
+		auto:             false,
+		eoi:              true,
+		usbTerm:          '\n',
+		eotChar:          '\n',
 	}
+
+	// Apply options using the functional option pattern.
+	for _, opt := range opts {
+		opt(&c)
+	}
+
+	// Verify validate primary address.
+	if !isPrimaryAddressValid(c.primaryAddr) {
+		return nil, fmt.Errorf("invalid primary address %d (must by 0-30)", c.primaryAddr)
+	}
+
 	// Configure the Prologix GPIB controller.
-	addrCmd := fmt.Sprintf("addr %d", addr)
+	addrCmd := fmt.Sprintf("addr %d", c.primaryAddr)
+	if c.hasSecondaryAddr {
+		if !isSecondaryAddressValid(c.secondaryAddr) {
+			return nil, fmt.Errorf("invalid secondary address %d (must be 96-126)", c.secondaryAddr)
+		}
+		addrCmd = fmt.Sprintf("addr %d %d", c.primaryAddr, c.secondaryAddr)
+	}
 	eotCharCmd := fmt.Sprintf("eot_char %d", c.eotChar)
 	cmds := []string{
 		"savecfg 0",       // Disable saving of configuration parameters in EPROM
@@ -59,7 +88,17 @@ func NewController(rw io.ReadWriter, addr int, clear bool) (*Controller, error) 
 			return nil, err
 		}
 	}
+
 	return &c, nil
+}
+
+// WithSecondaryAddress sets a secondary address, which must be in the range of
+// 96 and 126, inclusive.
+func WithSecondaryAddress(addr int) ControllerOption {
+	return func(c *Controller) {
+		c.hasSecondaryAddr = true
+		c.secondaryAddr = addr
+	}
 }
 
 // Write writes the given data to the instrument at the currently assigned GPIB
@@ -174,4 +213,22 @@ var gpibTermDesc = map[GpibTerm]string{
 
 func (term GpibTerm) String() string {
 	return gpibTermDesc[term]
+}
+
+// isPrimaryAddressValid checks that the primary GPIB address is between 0 and
+// 30, inclusive.
+func isPrimaryAddressValid(addr int) bool {
+	if addr < 0 || addr > 30 {
+		return false
+	}
+	return true
+}
+
+// isSecondaryAddressValid checks that the secondary GPIB address is between 96
+// and 126, inclusive.
+func isSecondaryAddressValid(addr int) bool {
+	if addr < 96 || addr > 126 {
+		return false
+	}
+	return true
 }
