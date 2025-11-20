@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// Query the GPIB instrument address.
-	addr, err := gpib.InstrumentAddress()
+	addr, _, err := gpib.InstrumentAddress()
 	if err != nil {
 		log.Fatal(err)
 	}

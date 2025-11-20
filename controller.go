@@ -23,6 +23,8 @@ type Controller struct {
 	eoi              bool
 	usbTerm          byte
 	eotChar          byte
+	debug            bool // if true, print controller commands before sending. Set via WithDebug().
+	ar488            bool // compatibility with Arduino AR488 - see WithAR488 documentation for details.
 }
 
 // ControllerOption applies an option to the controller.
@@ -68,8 +70,14 @@ func NewController(
 		addrCmd = fmt.Sprintf("addr %d %d", c.primaryAddr, c.secondaryAddr)
 	}
 	eotCharCmd := fmt.Sprintf("eot_char %d", c.eotChar)
-	cmds := []string{
-		"savecfg 0",       // Disable saving of configuration parameters in EPROM
+	cmds := []string{}
+	if !c.ar488 {
+		cmds = append(cmds,
+			"verbose 0", // turn off verbosity if on
+			"savecfg 0", // Disable saving of configuration parameters in EPROM
+		)
+	}
+	cmds = append(cmds,
 		addrCmd,           // Set the primary address.
 		"mode 1",          // Switch to controller mode.
 		"auto 0",          // Turn off read-after-write and address instrument to listen.
@@ -78,7 +86,11 @@ func NewController(
 		"read_tmo_ms 500", // Set the read timeout to 500 ms.
 		eotCharCmd,        // Set the EOT char
 		"eot_enable 1",    // Append character when EOI detected?
-		"savecfg 1",       // Enable saving of configuration parameters in EPROM
+	)
+	if !c.ar488 {
+		cmds = append(cmds,
+			"savecfg 1", // Enable saving of configuration parameters in EPROM
+		)
 	}
 	if clear {
 		cmds = append(cmds, "clr")
@@ -100,6 +112,14 @@ func WithSecondaryAddress(addr int) ControllerOption {
 		c.secondaryAddr = addr
 	}
 }
+
+// WithDebug causes commands and responses to be logged.
+func WithDebug() ControllerOption { return func(c *Controller) { c.debug = true } }
+
+// WithAR488 slightly alters the init commands, for compatiblity with the
+// Arduino-based AR488. Specifically, we do not emit 'verbose 0', nor do
+// we toggle savecfg.
+func WithAR488() ControllerOption { return func(c *Controller) { c.ar488 = true } }
 
 // Write writes the given data to the instrument at the currently assigned GPIB
 // address.
@@ -135,6 +155,9 @@ func (c *Controller) Command(format string, a ...any) error {
 	// I'm calling the WriteString method, which does that as well?
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
 	// log.Printf("sending cmd (with terminator added): %#v", cmd)
+	if c.debug {
+		log.Printf("cmd %q (%x)", cmd, cmd)
+	}
 	_, err := fmt.Fprint(c.rw, cmd)
 	return err
 }
@@ -149,7 +172,9 @@ func (c *Controller) Command(format string, a ...any) error {
 // change the GPIB terminator use the SetGPIBTermination method.
 func (c *Controller) Query(cmd string) (string, error) {
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
-	// log.Printf("sending query cmd: %#v", cmd)
+	if c.debug {
+		log.Printf("query: %q", cmd)
+	}
 	_, err := fmt.Fprint(c.rw, cmd)
 	if err != nil {
 		return "", fmt.Errorf("error writing command: %s", err)
@@ -177,11 +202,15 @@ func (c *Controller) Query(cmd string) (string, error) {
 // are prepended. Addtionally, a new line is appended to act as the USB
 // termination character.
 func (c *Controller) QueryController(cmd string) (string, error) {
-	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
+	err := c.CommandController(cmd)
 	if err != nil {
 		return "", err
 	}
-	return bufio.NewReader(c.rw).ReadString(c.eotChar)
+	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
+	if c.debug {
+		log.Printf("read data: %q", s)
+	}
+	return s, err
 }
 
 // CommandController sends the given command to the Prologix controller. To
@@ -189,7 +218,11 @@ func (c *Controller) QueryController(cmd string) (string, error) {
 // transmitting to the instrument over GPIB, two plus signs `++` are prepended.
 // Addtionally, a new line is appended to act as the USB termination character.
 func (c *Controller) CommandController(cmd string) error {
-	_, err := fmt.Fprintf(c.rw, "++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
+	cmd = fmt.Sprintf("++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
+	if c.debug {
+		log.Printf("cmd %q (%2x)", cmd, cmd)
+	}
+	_, err := c.rw.Write([]byte(cmd))
 	return err
 }
 

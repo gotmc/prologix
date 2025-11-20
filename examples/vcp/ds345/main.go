@@ -29,7 +29,7 @@ func init() {
 		"Serial port for Prologix VCP GPIB controller",
 	)
 
-	flag.IntVar(&gpibAddress, "gpib", 6, "GPIB address for the Keysight 33220A")
+	flag.IntVar(&gpibAddress, "gpib", 6, "GPIB address for the SRS DS345")
 }
 
 func main() {
@@ -44,14 +44,14 @@ func main() {
 	}
 
 	// Create a new GPIB controller using the aforementioned serial port and
-	// communicating with the instrument at GPIB address 4.
+	// communicating with the instrument at the given address.
 	gpib, err := prologix.NewController(vcp, gpibAddress, false)
 	if err != nil {
 		log.Fatalf("NewController error: %s", err)
 	}
 
 	// Query the GPIB instrument address.
-	addr, err := gpib.InstrumentAddress()
+	addr, _, err := gpib.InstrumentAddress()
 	if err != nil {
 		log.Fatal(err)
 	}

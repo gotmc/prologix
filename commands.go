@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
+
+	"go.uber.org/multierr"
 )
 
 // AssertEOI determines if the Prologix controller is configured to assert the
@@ -74,22 +77,53 @@ func (c *Controller) GPIBTermination() (GpibTerm, error) {
 }
 
 // InstrumentAddress returns the GPIB address for the instrument under control.
-func (c *Controller) InstrumentAddress() (int, error) {
-	// FIXME(mdr): Need to update so that it can handle a secondary address.
+func (c *Controller) InstrumentAddress() (int, int, error) {
 	s, err := c.QueryController("addr")
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	i, err := strconv.ParseInt(strings.TrimSpace(s), 10, 32)
+	s = strings.TrimSpace(s)
+	idx := 0
+	for i, c := range s {
+		if !unicode.IsNumber(c) {
+			idx = i
+			break
+		}
+	}
+	if idx == 0 {
+		idx = len(s)
+	}
+	pri, err := strconv.ParseInt(s[:idx], 10, 8)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	addr := int(i)
-	if addr != c.instrumentAddr {
-		c.instrumentAddr = addr
-		return addr, fmt.Errorf("internal state mismatch, address is now %d", addr)
+
+	var errs []error
+
+	if int(pri) != c.primaryAddr {
+		errs = append(errs,
+			fmt.Errorf("internal state mismatch, primary address was %d now %d", c.primaryAddr, pri))
 	}
-	return addr, nil
+	c.primaryAddr = int(pri)
+
+	// secondary address?
+	remain := strings.TrimLeft(s[idx:], " :,\t")
+	var sec int64
+	if len(remain) > 0 {
+		sec, err = strconv.ParseInt(remain, 10, 8)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("parsing secondary address in %s: %w", s, err))
+			return 0, 0, multierr.Combine(errs...)
+		}
+	}
+	if c.secondaryAddr != int(sec) {
+		errs = append(errs,
+			fmt.Errorf("internal state mismatch, secondary address was %d now %d", c.secondaryAddr, sec))
+	}
+	c.secondaryAddr = int(sec)
+
+	merr := multierr.Combine(errs...) // result is nil if errs is empty
+	return c.primaryAddr, c.secondaryAddr, merr
 }
 
 // ReadAfterWrite determines if the Prologix controller is configured to
@@ -190,7 +224,7 @@ func (c *Controller) SetInstrumentAddress(addr int) error {
 	if err != nil {
 		return err
 	}
-	c.instrumentAddr = addr
+	c.primaryAddr = addr
 	return nil
 }
 
