@@ -7,11 +7,24 @@ package prologix
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"strings"
 )
+
+// ContextReader is an optional interface that an io.ReadWriter can implement
+// to support context-aware reads.
+type ContextReader interface {
+	ReadContext(ctx context.Context, p []byte) (n int, err error)
+}
+
+// ContextWriter is an optional interface that an io.ReadWriter can implement
+// to support context-aware writes.
+type ContextWriter interface {
+	WriteContext(ctx context.Context, p []byte) (n int, err error)
+}
 
 // Controller models a GPIB controller-in-charge.
 type Controller struct {
@@ -127,10 +140,66 @@ func (c *Controller) Write(p []byte) (n int, err error) {
 	return c.rw.Write(p)
 }
 
+// WriteContext writes the given data to the instrument at the currently
+// assigned GPIB address. If the underlying writer implements ContextWriter,
+// the call is delegated directly. Otherwise, the write is performed in a
+// goroutine so the context cancellation is respected.
+func (c *Controller) WriteContext(ctx context.Context, p []byte) (n int, err error) {
+	if cw, ok := c.rw.(ContextWriter); ok {
+		return cw.WriteContext(ctx, p)
+	}
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	type result struct {
+		n   int
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		n, err := c.rw.Write(p)
+		ch <- result{n, err}
+	}()
+	select {
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case r := <-ch:
+		return r.n, r.err
+	}
+}
+
 // Read reads from the instrument at the currently assigned GPIB address into
 // the given byte slice.
 func (c *Controller) Read(p []byte) (n int, err error) {
 	return c.rw.Read(p)
+}
+
+// ReadContext reads from the instrument at the currently assigned GPIB address
+// into the given byte slice. If the underlying reader implements
+// ContextReader, the call is delegated directly. Otherwise, the read is
+// performed in a goroutine so the context cancellation is respected.
+func (c *Controller) ReadContext(ctx context.Context, p []byte) (n int, err error) {
+	if cr, ok := c.rw.(ContextReader); ok {
+		return cr.ReadContext(ctx, p)
+	}
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	type result struct {
+		n   int
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		n, err := c.rw.Read(p)
+		ch <- result{n, err}
+	}()
+	select {
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	case r := <-ch:
+		return r.n, r.err
+	}
 }
 
 // WriteString writes a string to the instrument at the currently assigned GPIB
