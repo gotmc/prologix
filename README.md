@@ -7,7 +7,6 @@ Go package to communicate with either a [Prologix][prologix-web] GPIB-ETHERNET
 [![Go Report Card][report badge]][report card]
 [![License Badge][license badge]][LICENSE.txt]
 
-
 ## Overview
 
 [Prologix][prologix-web] offers two GPIB controllers that enable a computer to
@@ -22,7 +21,6 @@ For more information, please see the User Manual and FAQ for either the
 [GPIB-ETHERNET controller][gpib-ethernet] or the [GPIB-USB
 controller][gpib-usb].
 
-
 ## Status
 
 - **GPIB-USB Direct Driver:** Not implemented
@@ -31,7 +29,6 @@ controller][gpib-usb].
   provide an io.ReadWriter from a network connection to use the Proglogix
   GPIB-ETHERNET Controller.
 - **GPIB Device Mode:** Not implemented
-
 
 ## IVI Support
 
@@ -44,7 +41,6 @@ The main advantage of using the [ivi][] package is not having to learn the
 [SCPI][] commands for each individual piece of test equipment. For instance,
 both the Agilent 33220A function generator and the Stanford Research Systems
 DS345 function generator can be programmed using one standard API with IVI.
-
 
 ## Methods for Communication
 
@@ -93,18 +89,38 @@ on macOS you can use [Homebrew][] to install the D2XX direct driver as follows:
 $ brew install libftdi
 ```
 
-
 ## Contributing
 
-To contribute, please fork the repository, create a feature branch, and then
-submit a [pull request][].
+Contributions are welcome! To contribute please:
 
+1. Fork the repository
+2. Create a feature branch
+3. Code
+4. Submit a [pull request][]
+
+### Development Dependencies
+
+- [just][] - task runner that replaces [GNU Make][make]
+
+### Testing
+
+Prior to submitting a [pull request][], please run:
+
+```bash
+$ just check
+$ just lint
+```
+
+To update and view the test coverage report:
+
+```bash
+$ just cover
+```
 
 ## License
 
 [prologix][prologix] is released under the MIT license. Please see the
 [LICENSE.txt][] file for more information.
-
 
 [ftdi-d2xx-drivers]: https://www.ftdichip.com/Drivers/D2XX.htm
 [ftdi-vcp-drivers]: https://www.ftdichip.com/Drivers/VCP.htm
@@ -115,8 +131,10 @@ submit a [pull request][].
 [homebrew]: https://brew.sh/
 [ivi]: https://github.com/gotmc/ivi
 [ivi-specs]: http://www.ivifoundation.org/
+[just]: https://just.systems/man/en/
 [LICENSE.txt]: https://github.com/gotmc/prologix/blob/master/LICENSE.txt
 [license badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[make]: https://www.gnu.org/software/make/
 [prologix]: https://github.com/gotmc/prologix
 [prologix-web]: http://prologix.biz/
 [pull request]: https://help.github.com/articles/using-pull-requests
