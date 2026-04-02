@@ -8,6 +8,7 @@ package prologix
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -246,7 +247,7 @@ func (c *Controller) Query(cmd string) (string, error) {
 	}
 	_, err := fmt.Fprint(c.rw, cmd)
 	if err != nil {
-		return "", fmt.Errorf("error writing command: %s", err)
+		return "", fmt.Errorf("error writing command: %w", err)
 	}
 	// If read-after-write is disabled, need to tell the Prologix controller to
 	// read.
@@ -254,11 +255,11 @@ func (c *Controller) Query(cmd string) (string, error) {
 		readCmd := "++read eoi"
 		_, err = fmt.Fprintf(c.rw, "%s%c", readCmd, c.usbTerm)
 		if err != nil {
-			return "", fmt.Errorf("error sending `%s` command: %s", readCmd, err)
+			return "", fmt.Errorf("error sending %q command: %w", readCmd, err)
 		}
 	}
 	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		log.Printf("found EOF")
 		return s, nil
 	}
