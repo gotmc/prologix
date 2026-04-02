@@ -65,7 +65,7 @@ func (vcp *VCP) ReadContext(ctx context.Context, p []byte) (n int, err error) {
 		if err := vcp.port.SetReadTimeout(timeout); err != nil {
 			return 0, err
 		}
-		defer vcp.port.SetReadTimeout(serial.NoTimeout)
+		defer func() { _ = vcp.port.SetReadTimeout(serial.NoTimeout) }()
 	}
 	n, err = vcp.port.Read(p)
 	if err != nil {

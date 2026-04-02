@@ -30,6 +30,7 @@ type ContextWriter interface {
 // Controller models a GPIB controller-in-charge.
 type Controller struct {
 	rw               io.ReadWriter
+	reader           *bufio.Reader
 	primaryAddr      int
 	hasSecondaryAddr bool
 	secondaryAddr    int
@@ -57,6 +58,7 @@ func NewController(
 ) (*Controller, error) {
 	c := Controller{
 		rw:               rw,
+		reader:           bufio.NewReader(rw),
 		primaryAddr:      addr,
 		hasSecondaryAddr: false,
 		auto:             false,
@@ -130,7 +132,7 @@ func WithSecondaryAddress(addr int) ControllerOption {
 // WithDebug causes commands and responses to be logged.
 func WithDebug() ControllerOption { return func(c *Controller) { c.debug = true } }
 
-// WithAR488 slightly alters the init commands, for compatiblity with the
+// WithAR488 slightly alters the init commands, for compatibility with the
 // Arduino-based AR488. Specifically, we do not emit 'verbose 0', nor do
 // we toggle savecfg.
 func WithAR488() ControllerOption { return func(c *Controller) { c.ar488 = true } }
@@ -258,7 +260,7 @@ func (c *Controller) Query(cmd string) (string, error) {
 			return "", fmt.Errorf("error sending %q command: %w", readCmd, err)
 		}
 	}
-	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
+	s, err := c.reader.ReadString(c.eotChar)
 	if errors.Is(err, io.EOF) {
 		log.Printf("found EOF")
 		return s, nil
@@ -276,7 +278,7 @@ func (c *Controller) QueryController(cmd string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s, err := bufio.NewReader(c.rw).ReadString(c.eotChar)
+	s, err := c.reader.ReadString(c.eotChar)
 	if c.debug {
 		log.Printf("read data: %q", s)
 	}

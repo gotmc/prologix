@@ -9,10 +9,10 @@ import (
 	"flag"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/gotmc/prologix"
 	"github.com/gotmc/prologix/driver/vcp"
-	"github.com/gotmc/query"
 )
 
 var (
@@ -112,17 +112,18 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		err = gpib.Command(cmd)
+		err = gpib.Command("%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// Query the output state
-	state, err := query.Bool(gpib, "OUTP:STAT?")
+	stateStr, err := gpib.Query("OUTP:STAT?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
+	state := strings.TrimSpace(stateStr) == "1"
 	if state {
 		log.Println("output is enabled")
 	} else {
@@ -135,7 +136,7 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		err = gpib.Command(cmd)
+		err = gpib.Command("%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -156,10 +157,11 @@ func main() {
 	log.Printf("voltage = %s", volt)
 
 	// Query the output state
-	state, err = query.Bool(gpib, "OUTP:STAT?")
+	stateStr, err = gpib.Query("OUTP:STAT?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
+	state = strings.TrimSpace(stateStr) == "1"
 	if state {
 		log.Println("output is enabled")
 	} else {

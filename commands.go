@@ -101,8 +101,14 @@ func (c *Controller) InstrumentAddress() (int, int, error) {
 	var errs []error
 
 	if int(pri) != c.primaryAddr {
-		errs = append(errs,
-			fmt.Errorf("internal state mismatch, primary address was %d now %d", c.primaryAddr, pri))
+		errs = append(
+			errs,
+			fmt.Errorf(
+				"internal state mismatch, primary address was %d now %d",
+				c.primaryAddr,
+				pri,
+			),
+		)
 	}
 	c.primaryAddr = int(pri)
 
@@ -117,8 +123,14 @@ func (c *Controller) InstrumentAddress() (int, int, error) {
 		}
 	}
 	if c.secondaryAddr != int(sec) {
-		errs = append(errs,
-			fmt.Errorf("internal state mismatch, secondary address was %d now %d", c.secondaryAddr, sec))
+		errs = append(
+			errs,
+			fmt.Errorf(
+				"internal state mismatch, secondary address was %d now %d",
+				c.secondaryAddr,
+				sec,
+			),
+		)
 	}
 	c.secondaryAddr = int(sec)
 

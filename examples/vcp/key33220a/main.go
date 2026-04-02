@@ -125,7 +125,7 @@ func main() {
 	}
 	for _, cmd := range cmds {
 		log.Printf("Sending command: %s", cmd)
-		err = gpib.Command(cmd)
+		err = gpib.Command("%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
