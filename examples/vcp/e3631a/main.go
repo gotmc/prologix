@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -35,6 +36,7 @@ func init() {
 func main() {
 	// Parse the flags
 	flag.Parse()
+	ctx := context.Background()
 
 	// Open virtual comm port.
 	log.Printf("Serial port = %s", serialPort)
@@ -101,7 +103,7 @@ func main() {
 	log.Printf("%s", term)
 
 	// Query the identification of the function generator.
-	idn, err := gpib.Query("*idn?")
+	idn, err := gpib.Query(ctx, "*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
@@ -112,14 +114,14 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		err = gpib.Command("%s", cmd)
+		err = gpib.Command(ctx, "%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// Query the output state
-	stateStr, err := gpib.Query("OUTP:STAT?")
+	stateStr, err := gpib.Query(ctx, "OUTP:STAT?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
@@ -136,28 +138,28 @@ func main() {
 	}
 
 	for _, cmd := range cmds {
-		err = gpib.Command("%s", cmd)
+		err = gpib.Command(ctx, "%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// Query the voltage and current at the output
-	vc, err := gpib.Query("appl? p6v")
+	vc, err := gpib.Query(ctx, "appl? p6v")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("voltage, current = %s", vc)
 
 	// Query the voltage at the output
-	volt, err := gpib.Query("meas? p6v")
+	volt, err := gpib.Query(ctx, "meas? p6v")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
 	log.Printf("voltage = %s", volt)
 
 	// Query the output state
-	stateStr, err = gpib.Query("OUTP:STAT?")
+	stateStr, err = gpib.Query(ctx, "OUTP:STAT?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
@@ -169,7 +171,7 @@ func main() {
 	}
 
 	// Query the identification of the function generator again.
-	idn, err = gpib.Query("*idn?")
+	idn, err = gpib.Query(ctx, "*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}

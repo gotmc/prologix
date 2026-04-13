@@ -143,11 +143,11 @@ func (c *Controller) Write(p []byte) (n int, err error) {
 	return c.rw.Write(p)
 }
 
-// WriteContext writes the given data to the instrument at the currently
-// assigned GPIB address. If the underlying writer implements ContextWriter,
-// the call is delegated directly. Otherwise, the write is performed in a
-// goroutine so the context cancellation is respected.
-func (c *Controller) WriteContext(ctx context.Context, p []byte) (n int, err error) {
+// WriteBinary writes binary data to the instrument at the currently assigned
+// GPIB address without adding a terminator. If the underlying writer implements
+// ContextWriter, the call is delegated directly. Otherwise, the write is
+// performed in a goroutine so the context cancellation is respected.
+func (c *Controller) WriteBinary(ctx context.Context, p []byte) (n int, err error) {
 	if cw, ok := c.rw.(ContextWriter); ok {
 		return cw.WriteContext(ctx, p)
 	}
@@ -177,11 +177,12 @@ func (c *Controller) Read(p []byte) (n int, err error) {
 	return c.rw.Read(p)
 }
 
-// ReadContext reads from the instrument at the currently assigned GPIB address
-// into the given byte slice. If the underlying reader implements
-// ContextReader, the call is delegated directly. Otherwise, the read is
-// performed in a goroutine so the context cancellation is respected.
-func (c *Controller) ReadContext(ctx context.Context, p []byte) (n int, err error) {
+// ReadBinary reads binary data from the instrument at the currently assigned
+// GPIB address into the given byte slice without terminator interpretation. If
+// the underlying reader implements ContextReader, the call is delegated
+// directly. Otherwise, the read is performed in a goroutine so the context
+// cancellation is respected.
+func (c *Controller) ReadBinary(ctx context.Context, p []byte) (n int, err error) {
 	if cr, ok := c.rw.(ContextReader); ok {
 		return cr.ReadContext(ctx, p)
 	}
@@ -217,16 +218,14 @@ func (c *Controller) WriteString(s string) (n int, err error) {
 // SCPI/ASCII command to the instrument at the currently assigned GPIB address.
 // All leading and trailing whitespace is removed before appending the USB
 // terminator to the command sent to the Prologix.
-func (c *Controller) Command(format string, a ...any) error {
-	cmd := format
+func (c *Controller) Command(ctx context.Context, cmd string, a ...any) error {
 	if a != nil {
-		cmd = fmt.Sprintf(format, a...)
+		cmd = fmt.Sprintf(cmd, a...)
 	}
-	// log.Printf("sending cmd (terminator not yet added): %#v", cmd)
-	// TODO: Why am I trimming whitespace and adding the USB terminator here if
-	// I'm calling the WriteString method, which does that as well?
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
-	// log.Printf("sending cmd (with terminator added): %#v", cmd)
 	if c.debug {
 		log.Printf("cmd %q (%x)", cmd, cmd)
 	}
@@ -242,7 +241,10 @@ func (c *Controller) Command(format string, a ...any) error {
 // non-escaped LF, CR and ESC characters and appends the GPIB terminator, as
 // specified by the `eos` command, before sending the data to instruments.  To
 // change the GPIB terminator use the SetGPIBTermination method.
-func (c *Controller) Query(cmd string) (string, error) {
+func (c *Controller) Query(ctx context.Context, cmd string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	cmd = fmt.Sprintf("%s%c", strings.TrimSpace(cmd), c.usbTerm)
 	if c.debug {
 		log.Printf("query: %q", cmd)
@@ -266,6 +268,14 @@ func (c *Controller) Query(cmd string) (string, error) {
 		return s, nil
 	}
 	return s, err
+}
+
+// Close closes the underlying transport if it implements io.Closer.
+func (c *Controller) Close() error {
+	if closer, ok := c.rw.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
 }
 
 // QueryController sends the given command to the Prologix controller and

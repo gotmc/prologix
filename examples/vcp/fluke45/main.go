@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
 	"strconv"
@@ -17,6 +18,8 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
 	// Open virtual comm port.
 	serialPort := "/dev/tty.usbserial-PXFJL0WD"
 	vcp, err := vcp.NewVCP(serialPort)
@@ -121,7 +124,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	idn, err := gpib.Query("*idn?")
+	idn, err := gpib.Query(ctx, "*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	} else if err == io.EOF {
@@ -135,7 +138,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	idn, err = gpib.Query("*idn?")
+	idn, err = gpib.Query(ctx, "*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	} else if err == io.EOF {
@@ -144,7 +147,7 @@ func main() {
 	log.Printf("query idn = %s", idn)
 
 	// Measure the resistance
-	resString, err := gpib.Query("meas1?")
+	resString, err := gpib.Query(ctx, "meas1?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	} else if err == io.EOF {

@@ -39,7 +39,7 @@ The package uses a layered design separating transport from GPIB protocol logic:
 - **Examples** (`examples/vcp/`): Working examples for real instruments (E3631A, DS345, Fluke 45, 33220A). All follow the same pattern: open VCP → create Controller → query version → run device commands → restore front panel → close.
 
 Key design points:
-- `Controller` distinguishes between instrument communication (`Command`, `Query`, `Write`) and Prologix controller commands (`CommandController`, `QueryController`) which prepend `++`.
+- `Controller` satisfies the `ivi.Transport` interface via `Command`, `Query`, `ReadBinary`, `WriteBinary`, and `Close`. It distinguishes between instrument communication (`Command`, `Query`, `Write`) and Prologix controller commands (`CommandController`, `QueryController`) which prepend `++`.
 - Context-aware I/O: `Controller` checks if the underlying `io.ReadWriter` implements optional `ContextReader`/`ContextWriter` interfaces. If so, it delegates directly; otherwise it falls back to goroutine-based context handling.
 - The `WithAR488()` option skips `verbose` and `savecfg` commands for Arduino AR488 compatibility.
 - `Query` automatically sends `++read eoi` when auto read-after-write is disabled.

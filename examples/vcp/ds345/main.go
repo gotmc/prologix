@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -35,6 +36,7 @@ func init() {
 func main() {
 	// Parse the flags
 	flag.Parse()
+	ctx := context.Background()
 
 	// Open virtual comm port.
 	log.Printf("Serial port = %s", serialPort)
@@ -93,7 +95,7 @@ func main() {
 	log.Printf("%s", term)
 
 	// Query the identification of the function generator.
-	idn, err := gpib.Query("*idn?")
+	idn, err := gpib.Query(ctx, "*idn?")
 	if err != nil && err != io.EOF {
 		log.Fatalf("error querying serial port: %s", err)
 	}
@@ -116,7 +118,7 @@ func main() {
 	}
 	for _, cmd := range cmds {
 		log.Printf("Sending command: %s", cmd)
-		err = gpib.Command("%s", cmd)
+		err = gpib.Command(ctx, "%s", cmd)
 		if err != nil {
 			log.Fatal(err)
 		}
