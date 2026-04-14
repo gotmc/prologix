@@ -40,7 +40,7 @@ The package uses a layered design separating transport from GPIB protocol logic:
 
 Key design points:
 - `Controller` satisfies the `ivi.Transport` interface via `Command`, `Query`, `ReadBinary`, `WriteBinary`, and `Close`. It distinguishes between instrument communication (`Command`, `Query`, `Write`) and Prologix controller commands (`CommandController`, `QueryController`) which prepend `++`.
-- Context-aware I/O: `Controller` checks if the underlying `io.ReadWriter` implements optional `ContextReader`/`ContextWriter` interfaces. If so, it delegates directly; otherwise it falls back to goroutine-based context handling.
+- Context-aware I/O: `Controller` checks if the underlying `io.ReadWriter` implements optional `contextReader`/`contextWriter` interfaces (unexported). If so, it delegates directly; otherwise it falls back to goroutine-based context handling.
 - The `WithAR488()` option skips `verbose` and `savecfg` commands for Arduino AR488 compatibility.
 - `Query` automatically sends `++read eoi` when auto read-after-write is disabled.
 - Binary data methods (`Write`/`Read`) vs string methods (`WriteString`, `Command`, `Query`) handle GPIB character escaping differently. Prologix strips unescaped LF, CR, ESC, and `+` characters, so `Write` escapes them automatically.

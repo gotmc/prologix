@@ -15,15 +15,15 @@ import (
 	"strings"
 )
 
-// ContextReader is an optional interface that an io.ReadWriter can implement
+// contextReader is an optional interface that an io.ReadWriter can implement
 // to support context-aware reads.
-type ContextReader interface {
+type contextReader interface {
 	ReadContext(ctx context.Context, p []byte) (n int, err error)
 }
 
-// ContextWriter is an optional interface that an io.ReadWriter can implement
+// contextWriter is an optional interface that an io.ReadWriter can implement
 // to support context-aware writes.
-type ContextWriter interface {
+type contextWriter interface {
 	WriteContext(ctx context.Context, p []byte) (n int, err error)
 }
 
@@ -72,9 +72,9 @@ func NewController(
 		opt(&c)
 	}
 
-	// Verify validate primary address.
+	// Validate primary address.
 	if !isPrimaryAddressValid(c.primaryAddr) {
-		return nil, fmt.Errorf("invalid primary address %d (must by 0-30)", c.primaryAddr)
+		return nil, fmt.Errorf("invalid primary address %d (must be 0-30)", c.primaryAddr)
 	}
 
 	// Configure the Prologix GPIB controller.
@@ -145,10 +145,10 @@ func (c *Controller) Write(p []byte) (n int, err error) {
 
 // WriteBinary writes binary data to the instrument at the currently assigned
 // GPIB address without adding a terminator. If the underlying writer implements
-// ContextWriter, the call is delegated directly. Otherwise, the write is
+// contextWriter, the call is delegated directly. Otherwise, the write is
 // performed in a goroutine so the context cancellation is respected.
 func (c *Controller) WriteBinary(ctx context.Context, p []byte) (n int, err error) {
-	if cw, ok := c.rw.(ContextWriter); ok {
+	if cw, ok := c.rw.(contextWriter); ok {
 		return cw.WriteContext(ctx, p)
 	}
 	if err := ctx.Err(); err != nil {
@@ -179,11 +179,11 @@ func (c *Controller) Read(p []byte) (n int, err error) {
 
 // ReadBinary reads binary data from the instrument at the currently assigned
 // GPIB address into the given byte slice without terminator interpretation. If
-// the underlying reader implements ContextReader, the call is delegated
+// the underlying reader implements contextReader, the call is delegated
 // directly. Otherwise, the read is performed in a goroutine so the context
 // cancellation is respected.
 func (c *Controller) ReadBinary(ctx context.Context, p []byte) (n int, err error) {
-	if cr, ok := c.rw.(ContextReader); ok {
+	if cr, ok := c.rw.(contextReader); ok {
 		return cr.ReadContext(ctx, p)
 	}
 	if err := ctx.Err(); err != nil {
@@ -210,7 +210,9 @@ func (c *Controller) ReadBinary(ctx context.Context, p []byte) (n int, err error
 // address.
 func (c *Controller) WriteString(s string) (n int, err error) {
 	cmd := fmt.Sprintf("%s%c", strings.TrimSpace(s), c.usbTerm)
-	log.Printf("prologix driver writing string: %s", cmd)
+	if c.debug {
+		log.Printf("prologix driver writing string: %s", cmd)
+	}
 	return c.rw.Write([]byte(cmd))
 }
 
@@ -264,7 +266,8 @@ func (c *Controller) Query(ctx context.Context, cmd string) (string, error) {
 	}
 	s, err := c.reader.ReadString(c.eotChar)
 	if errors.Is(err, io.EOF) {
-		log.Printf("found EOF")
+		// EOF is expected when the instrument sends a complete response
+		// terminated by the EOT character without additional trailing data.
 		return s, nil
 	}
 	return s, err
@@ -281,7 +284,7 @@ func (c *Controller) Close() error {
 // QueryController sends the given command to the Prologix controller and
 // returns its response as a string. To indicate this is a command for the
 // Prologix controller, thereby not transmitting over GPIB, two plus signs `++`
-// are prepended. Addtionally, a new line is appended to act as the USB
+// are prepended. Additionally, a new line is appended to act as the USB
 // termination character.
 func (c *Controller) QueryController(cmd string) (string, error) {
 	err := c.CommandController(cmd)
@@ -298,7 +301,7 @@ func (c *Controller) QueryController(cmd string) (string, error) {
 // CommandController sends the given command to the Prologix controller. To
 // indicate this is a command for the Prologix controller, thereby not
 // transmitting to the instrument over GPIB, two plus signs `++` are prepended.
-// Addtionally, a new line is appended to act as the USB termination character.
+// Additionally, a new line is appended to act as the USB termination character.
 func (c *Controller) CommandController(cmd string) error {
 	cmd = fmt.Sprintf("++%s%c", strings.ToLower(strings.TrimSpace(cmd)), c.usbTerm)
 	if c.debug {

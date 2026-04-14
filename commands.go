@@ -240,7 +240,7 @@ func (c *Controller) SetInstrumentAddress(addr int) error {
 	return nil
 }
 
-// SetReadAfterWrite sets the Proglogix controller to automatically read after write.
+// SetReadAfterWrite sets the Prologix controller to automatically read after write.
 func (c *Controller) SetReadAfterWrite(enable bool) error {
 	// Send the proper command based on whether enabling or disabling.
 	cmd := "auto 0"
@@ -257,7 +257,7 @@ func (c *Controller) SetReadAfterWrite(enable bool) error {
 	return nil
 }
 
-// SetReadTimeout sets the Proglogix controller's read timeout in milliseconds.
+// SetReadTimeout sets the Prologix controller's read timeout in milliseconds.
 // The timeout must be between 1 and 3000 milliseconds.
 func (c *Controller) SetReadTimeout(timeout int) error {
 	if timeout < 1 || timeout > 3000 {

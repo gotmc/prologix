@@ -47,7 +47,7 @@ func main() {
 
 	// Create a new GPIB controller using the aforementioned serial port
 	// communicating with the instrument at the given GPIB address.
-	log.Printf("Create new Prolgoix controller using GPIB address %d",
+	log.Printf("Create new Prologix controller using GPIB address %d",
 		gpibAddress)
 	gpib, err := prologix.NewController(vcp, gpibAddress, false)
 	if err != nil {
