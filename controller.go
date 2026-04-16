@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"strings"
+	"time"
 )
 
 // contextReader is an optional interface that an io.ReadWriter can implement
@@ -25,6 +26,18 @@ type contextReader interface {
 // to support context-aware writes.
 type contextWriter interface {
 	WriteContext(ctx context.Context, p []byte) (n int, err error)
+}
+
+// readDeadliner is an optional interface (e.g., net.Conn) that allows setting
+// a read deadline to unblock a pending read on context cancellation.
+type readDeadliner interface {
+	SetReadDeadline(t time.Time) error
+}
+
+// writeDeadliner is an optional interface (e.g., net.Conn) that allows setting
+// a write deadline to unblock a pending write on context cancellation.
+type writeDeadliner interface {
+	SetWriteDeadline(t time.Time) error
 }
 
 // Controller models a GPIB controller-in-charge.
@@ -165,6 +178,12 @@ func (c *Controller) WriteBinary(ctx context.Context, p []byte) (n int, err erro
 	}()
 	select {
 	case <-ctx.Done():
+		// Try to unblock the goroutine by setting an immediate deadline.
+		if wd, ok := c.rw.(writeDeadliner); ok {
+			_ = wd.SetWriteDeadline(time.Now())
+			<-ch
+			_ = wd.SetWriteDeadline(time.Time{})
+		}
 		return 0, ctx.Err()
 	case r := <-ch:
 		return r.n, r.err
@@ -200,6 +219,12 @@ func (c *Controller) ReadBinary(ctx context.Context, p []byte) (n int, err error
 	}()
 	select {
 	case <-ctx.Done():
+		// Try to unblock the goroutine by setting an immediate deadline.
+		if rd, ok := c.rw.(readDeadliner); ok {
+			_ = rd.SetReadDeadline(time.Now())
+			<-ch
+			_ = rd.SetReadDeadline(time.Time{})
+		}
 		return 0, ctx.Err()
 	case r := <-ch:
 		return r.n, r.err
